@@ -56,7 +56,6 @@ inline std::size_t getNbBinsForClippingMode(std::size_t nbBits,
 {
     switch (clippingMode) {
         case ClippingMode::MSE:
-            return std::min(1 << nbBits, 65536);
         case ClippingMode::KL_DIVERGENCE:
             return std::min((1 << nbBits)*32, 65536);
         default:
@@ -108,11 +107,9 @@ public:
 private:
     static double KLDivergence(const Histogram& ref, const Histogram& quant);
 
-    double MSE(const std::vector<double>& normalizedValues, 
-               double threshold, std::size_t nbBits, bool isUnsigned) const;
+    double MSE(double threshold, std::size_t nbBits) const;
                 
-    Histogram quantize(double newMinVal,
-                       double newMaxVal,
+    Histogram quantize(double newMinVal, double newMaxVal,
                        std::size_t newNbBins) const;
 private:
     double mMinVal;
