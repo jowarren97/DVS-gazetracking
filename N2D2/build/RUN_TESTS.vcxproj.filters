@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Jo\DVS-gazetracking\N2D2\build\CMakeFiles\e815ab40f8aad3a0225007eee1c648da\RUN_TESTS_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{283DA16B-3E90-3EE6-8857-AE3CA54ACD09}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
