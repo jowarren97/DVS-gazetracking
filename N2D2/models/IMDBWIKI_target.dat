@@ -1,0 +1,10 @@
+# background
+# ?-* (unknown gender)
+# padding
+default 0
+
+# male gender
+M-* 1
+
+# female gender
+F-* 2
