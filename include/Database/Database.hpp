@@ -329,6 +329,10 @@ protected:
     /// Margin around the ROIs, in pixels, with no label (label ID = -1)
     Parameter<unsigned int> mROIsMargin;
     Parameter<bool> mRandomPartitioning;
+    // If true, load image label with DataFile::readLabel()
+    Parameter<bool> mDataFileLabel;
+    // If true, force composite labels, discarding the stimulus label ID
+    Parameter<bool> mForceCompositeLabel;
 
     /**
      * TABLES
