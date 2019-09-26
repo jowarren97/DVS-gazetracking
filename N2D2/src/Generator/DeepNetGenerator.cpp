@@ -73,6 +73,7 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
     }
 #endif
 
+	//for RRAM/PCM neurons - ignore
     if (CellGenerator::mDefaultModel == "RRAM") {
         Synapse_RRAM::setProgramMethod(iniConfig.getProperty(
             "ProgramMethod(" + CellGenerator::mDefaultModel + ")",
@@ -88,21 +89,21 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
     Synapse_Static::setCheckWeightRange(iniConfig.getProperty
                                         <bool>("CheckWeightRange", true));
 
-    std::shared_ptr<DeepNet> deepNet(new DeepNet(network));
-    deepNet->setParameter("Name", Utils::baseName(fileName));
+    std::shared_ptr<DeepNet> deepNet(new DeepNet(network)); //new deepnet
+    deepNet->setParameter("Name", Utils::baseName(fileName)); //set name as filename
     deepNet->setParameter("SignalsDiscretization",
         iniConfig.getProperty<unsigned int>("SignalsDiscretization", 0U));
     deepNet->setParameter("FreeParametersDiscretization",
         iniConfig.getProperty
         <unsigned int>("FreeParametersDiscretization", 0U));
 
-    if (iniConfig.isSection("database"))
+    if (iniConfig.isSection("database")) //check if database section in ini file
         deepNet->setDatabase(
             DatabaseGenerator::generate(iniConfig, "database"));
     else {
         std::cout << Utils::cwarning << "Warning: no database specified."
                   << Utils::cdef << std::endl;
-        deepNet->setDatabase(std::make_shared<Database>());
+        deepNet->setDatabase(std::make_shared<Database>()); //if no database set ptr as empty(?) ptr to a database
     }
 
     // Set up the environment
@@ -111,9 +112,9 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
     if (iniConfig.isSection("cenv"))
         deepNet->setStimuliProvider(CEnvironmentGenerator::generate(
             *deepNet->getDatabase(), iniConfig, "cenv"));
-    else if (iniConfig.isSection("env"))
+    else if (iniConfig.isSection("env")) //<--- THIS IS WHAT WE NEED
         deepNet->setStimuliProvider(EnvironmentGenerator::generate(
-            network, *deepNet->getDatabase(), iniConfig, "env"));
+            network, *deepNet->getDatabase(), iniConfig, "env")); //make an env from database
     else {
         deepNet->setStimuliProvider(StimuliProviderGenerator::generate(
             *deepNet->getDatabase(), iniConfig, "sp"));
@@ -126,30 +127,33 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
 
     const std::vector<std::string> sections = iniConfig.getSections();
 
+	//loop thru sections of ini file
     for (std::vector<std::string>::const_iterator itSection = sections.begin(),
                                                   itSectionEnd = sections.end();
          itSection != itSectionEnd;
          ++itSection) {
         iniConfig.currentSection(*itSection, false);
 
+		//if input
         if (iniConfig.isProperty("Input")) {
             std::vector<std::string> inputs = Utils::split(
-                iniConfig.getProperty<std::string>("Input"), ",");
+                iniConfig.getProperty<std::string>("Input"), ","); //collect all inputs (section may have multiple input cells)
 
             std::map<std::string, std::vector<std::string> >::iterator
                 itParent;
             std::tie(itParent, std::ignore) = parentLayers.insert(
                 std::make_pair((*itSection), std::vector<std::string>()));
 
+			//loop through all inputs
             for (std::vector<std::string>::iterator it = inputs.begin(),
                                                     itEnd = inputs.end();
                  it != itEnd;
                  ++it)
             {
                 if ((*it) == "sp" || (*it) == "cenv")
-                    (*it) = "env";
+                    (*it) = "env"; //replace any 'sp' or 'cenv' input with 'env' - not sure why
 
-                (*itParent).second.push_back((*it));
+                (*itParent).second.push_back((*it)); 
                 // std::cout << "  " << (*it) << " => " << (*itSection) <<
                 // std::endl;
             }
@@ -217,6 +221,7 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
         }
     }
 
+	//'layers' is vector of single layers, which are themselves vector of strings; 
     for (std::vector<std::vector<std::string> >::const_iterator itLayer
          = layers.begin() + 1,
          itLayerEnd = layers.end();
@@ -227,7 +232,7 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
              it != itEnd;
              ++it)
         {
-            std::vector<std::shared_ptr<Cell> > parentCells;
+            std::vector<std::shared_ptr<Cell> > parentCells; //vector of parents that current cell(?) connects to
 
             for (std::vector<std::string>::const_iterator itParent
                  = parentLayers[(*it)].begin();
@@ -247,11 +252,11 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
                                           parentCells,
                                           iniConfig,
                                           *it);
-            deepNet->addCell(cell, parentCells);
+            deepNet->addCell(cell, parentCells); //havent 'connected' anything at this point
 
             const std::vector<std::string> targets
                 = iniConfig.getSections((*it) + ".Target*");
-
+			//apply targets if any specified - dont need this
             for (std::vector<std::string>::const_iterator itTarget
                  = targets.begin(),
                  itTargetEnd = targets.end();
@@ -288,7 +293,7 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
                 std::shared_ptr<Monitor> monitor(new Monitor(network));
                 monitor->add(cellSpike->getOutputs());
 
-                deepNet->addMonitor((*it), monitor);
+                deepNet->addMonitor((*it), monitor); //added monitor to cell (if cellspike, which is what we are using)
 
             }
             else if (isEnv) {
@@ -299,7 +304,7 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
         }
     }
 
-    if (deepNet->getTargets().empty())
+    if (deepNet->getTargets().empty()) //deepnet needs targets - why??
         throw std::runtime_error(
             "Missing target cell (no [*.Target] section found)");
 
@@ -309,7 +314,7 @@ N2D2::DeepNetGenerator::generate(Network& network, const std::string& fileName)
          itCells != itCellsEnd;
          ++itCells) {
         CellGenerator::postGenerate(
-            (*itCells).second, deepNet, iniConfig, (*itCells).first);
+            (*itCells).second, deepNet, iniConfig, (*itCells).first); //what is registrar?? What does postgenerate do?
     }
 
     for (std::vector<std::shared_ptr<Target> >::const_iterator itTargets
