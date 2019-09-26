@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<!-- saved from url=(0080)http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="shortcut icon" href="http://spinnakermanchester.github.io/images/favicon.png">
+    <link href="./PyNN on SpiNNaker Installation Guide_files/css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="./PyNN on SpiNNaker Installation Guide_files/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="./PyNN on SpiNNaker Installation Guide_files/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="./PyNN on SpiNNaker Installation Guide_files/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>PyNN on SpiNNaker Installation Guide</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>PyNN on SpiNNaker Installation Guide</h1>
+      </div>
+      <a href="https://github.com/SpiNNakerManchester" class="button"><small>Follow me on</small> GitHub</a>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+        <p>This guide details how to install the release version of the tools required to run simulations on SpiNNaker using the PyNN scripting language.</p>
+
+<h1 id="installation">Installation</h1>
+
+<p>You must first install the <a href="http://spinnakermanchester.github.io/common_pages/4.0.0/PythonInstall.html">Python Dependencies</a>.  Continue to the <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Central">Standard Central Installation</a>, <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#User">User-only Installation</a> or <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Virtualenv">Virtualenv Installation</a> to install the remaining requirements, depending on the needs of your working environment.</p>
+
+<p><strong>Note</strong>: sPyNNakerExternalDevicesPlugin and sPyNNakerExtraModelsPlugin are no longer required.  These extra modules have been merged in to the main sPyNNaker module.  You will be asked to uninstall these modules below if you have previously installed them, but will note that there are no instructions for installing a newer version.</p>
+
+<ul>
+  <li><a href="http://spinnakermanchester.github.io/common_pages/4.0.0/PythonInstall.html">Python Dependencies</a></li>
+  <li><a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Central">Standard Central Installation</a></li>
+  <li><a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#User">User-Only Installation</a></li>
+  <li><a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Virtualenv">Virtualenv Installation</a></li>
+  <li><a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Configuration">Configuration</a></li>
+  <li><a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Examples">Running some examples</a></li>
+  <li><a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Trouble">Troubleshooting</a></li>
+</ul>
+
+<h1 id="-standard-central-installation"><a name="Central"></a> Standard Central Installation</h1>
+<p>These instructions will install the required packages in a central location.  If you are installing on Linux, you must have root access to do this (or prepend each command with <code class="highlighter-rouge">sudo</code>), and Windows users should run these commands from a command prompt run as Administrator (right-click the shortcut for the command prompt and select “Run as administrator”, but do not use the <code class="highlighter-rouge">sudo</code> in the commands below).</p>
+
+<p>If you already have installed sPyNNaker previously (and the optional sPyNNakerExternalDevicesPlugin and/or sPyNNakerExtraModelsPlugin), you will need to uninstall it:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[sudo] pip uninstall pyNN-SpiNNaker
+[sudo] pip uninstall sPyNNaker
+[sudo] pip uninstall sPyNNakerExternalDevicesPlugin
+[sudo] pip uninstall sPyNNakerExtraModelsPlugin
+</code></pre></div></div>
+
+<h2 id="for-pynn-09-support">For PyNN 0.9 support:</h2>
+
+<ol>
+  <li>
+    <p>Install sPyNNaker8:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[sudo] pip install sPyNNaker8
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install pyNN-SpiNNaker:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[sudo] python -m spynnaker8.setup-pynn
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install Matplotlib:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[sudo] pip install matplotlib
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>If for some reason you have to use a version of PyNN earlier than 0.8 then please contact us.</p>
+
+<p>You can now <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Configuration">configure</a> your environment.</p>
+
+<h1 id="-user-only-installation"><a name="User"></a> User-only Installation</h1>
+
+<p>These instructions will install the required packages only for the current user (in your home directory).  This can avoid issues where you don’t have root access to the machine you are installing on, or on a shared machine where the dependencies might otherwise conflict with those of other users.</p>
+
+<p>If you already have installed sPyNNaker previously (and the optional sPyNNakerExternalDevicesPlugin and/or sPyNNakerExtraModelsPlugin), you will need to uninstall it:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip uninstall pyNN-SpiNNaker
+pip uninstall sPyNNaker
+pip uninstall sPyNNakerExternalDevicesPlugin
+pip uninstall sPyNNakerExtraModelsPlugin
+</code></pre></div></div>
+
+<h2 id="for-pynn-09-support-1">For PyNN 0.9 support:</h2>
+
+<ol>
+  <li>
+    <p>Install sPyNNaker8:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install sPyNNaker8 --user
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install pyNN-SpiNNaker:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m spynnaker8.setup-pynn
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install Matplotlib:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install matplotlib --user
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>If for some reason you have to use a version of PyNN earlier than 0.8 then please contact us.</p>
+
+<p>You can now <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Configuration">configure</a> your environment.</p>
+
+<h1 id="-virtualenv-installation"><a name="Virtualenv"></a> Virtualenv Installation</h1>
+
+<p>Follow <a href="http://spinnakermanchester.github.io/common_pages/4.0.0/VirtualEnv.html">these instructions</a> to install the dependencies in a virtual environment.</p>
+
+<p>If you already have installed sPyNNaker previously (and the optional sPyNNakerExternalDevicesPlugin and/or sPyNNakerExtraModelsPlugin), you will need to uninstall it:</p>
+
+<ol>
+  <li>
+    <p>Activate your virtualenv, <code class="highlighter-rouge">&lt;name&gt;</code></p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>source &lt;name&gt;/bin/activate
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Uninstall the existing tools</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip uninstall pyNN-SpiNNaker
+pip uninstall sPyNNaker
+pip uninstall sPyNNakerExternalDevicesPlugin
+pip uninstall sPyNNakerExtraModelsPlugin
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>To install the tools, first, activate your virtualenv, <code class="highlighter-rouge">&lt;name&gt;</code>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>source &lt;name&gt;/bin/activate
+</code></pre></div></div>
+
+<h2 id="windows-64-bit">Windows 64-bit:</h2>
+
+<ol>
+  <li>
+    <p>Install numpy:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> pip install https://github.com/SpiNNakerManchester/SpiNNakerManchester.github.io/releases/download/v1.0-win64/numpy-1.13.1.mkl-cp27-cp27m-win_amd64.whl
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install scipy:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> pip install https://github.com/SpiNNakerManchester/SpiNNakerManchester.github.io/releases/download/v1.0-win64/scipy-0.19.1-cp27-cp27m-win_amd64.whl```
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="windows-32-bit">Windows 32-bit:</h2>
+
+<ol>
+  <li>
+    <p>Install numpy (optional if you are going to use a Virtual Env):</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> pip install https://github.com/SpiNNakerManchester/SpiNNakerManchester.github.io/releases/download/v1.0-win32/numpy-1.13.1.mkl-cp27-cp27m-win32.whl```
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install scipy (optional if you are going to use a Virtual Env):</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code> pip install https://github.com/SpiNNakerManchester/SpiNNakerManchester.github.io/releases/download/v1.0-win32/scipy-0.19.1-cp27-cp27m-win32.whl```
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<h2 id="for-pynn-09-support-2">For PyNN 0.9 support:</h2>
+
+<ol>
+  <li>
+    <p>Install sPyNNaker8:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install sPyNNaker8
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install pyNN-SpiNNaker:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python -m spynnaker8.setup-pynn
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>Install Matplotlib:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip install matplotlib
+</code></pre></div>    </div>
+  </li>
+</ol>
+
+<p>If for some reason you have to use a version of PyNN earlier than 0.8 then please contact us.</p>
+
+<p>You can now <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Configuration">configure</a> your environment.</p>
+
+<h1 id="-configuration"><a name="Configuration"></a> Configuration</h1>
+
+<p>When SpyNNaker is first called, if a configuration file is not found, it will create one in your home directory and exit.  It is possible to ask SpyNNaker to do this before you run your first simulation as follows:</p>
+
+<p>Run this small script</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>import pyNN.spiNNaker as sim
+sim.setup()
+sim.end()
+</code></pre></div></div>
+
+<p>Unless one already exists a new file called “.spynnaker.cfg” will be created in your home directory.  You must edit this file to ensure that SpyNNaker can access your SpiNNaker machine.  Upon opening this file, the part to alter will look like the following:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[Machine]
+machineName = None
+version = None
+</code></pre></div></div>
+
+<p>If you have a SpiNNaker board, then go to <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#LocalBoard">Local Board</a> if you do not have a SpiNNaker board, please follow the instructions in <a href="http://spinnakermanchester.github.io/common_pages/3.0.0/VirtualMode.html">Instructions on how to use the different front ends in virtual mode</a> and then go to <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#Examples">Running some examples</a>.</p>
+
+<h2 id="-local-board"><a name="LocalBoard"></a> Local Board</h2>
+
+<p>Within the file, you should set <code class="highlighter-rouge">machineName</code> to the IP address or hostname of your SpiNNaker machine, and <code class="highlighter-rouge">version</code> to the version of your SpiNNaker board; this will almost certainly be “<code class="highlighter-rouge">3</code>” for a 4-chip board or “<code class="highlighter-rouge">5</code>” on a 48-chip board. The default ip address for a spinn-3 board is <code class="highlighter-rouge">192.168.240.253</code> and the default ip address for a spinn-5 board is <code class="highlighter-rouge">192.168.240.1</code>.</p>
+
+<p>Now go to <a href="http://spinnakermanchester.github.io/spynnaker/4.0.0/PyNNOnSpinnakerInstall.html#NetworkConfiguration">Network Configuration</a>.</p>
+
+<h2 id="-network-configuration"><a name="NetworkConfiguration"></a> Network Configuration</h2>
+
+<p>Go to the network settings for your computer and add or set an IPv4 entry with the following address for the adapter connected to the SpiNNaker board:</p>
+
+<ol>
+  <li>IP address = <code class="highlighter-rouge">192.168.240.254</code></li>
+  <li>sub-mask = <code class="highlighter-rouge">255.255.255.0</code></li>
+  <li>default gateway = <code class="highlighter-rouge">0.0.0.0</code></li>
+</ol>
+
+<h1 id="-running-some-examples"><a name="Examples"></a> Running some examples</h1>
+<ol>
+  <li>
+    <p>Download the examples:</p>
+
+    <ul>
+      <li><strong>PyNN 0.8 Examples</strong> are <a href="https://github.com/SpiNNakerManchester/PyNN8Examples/archive/4.0.0.zip">here</a> (zip) or <a href="https://github.com/SpiNNakerManchester/PyNN8Examples/archive/4.0.0.tar.gz">here</a> (tar.gz)</li>
+    </ul>
+  </li>
+  <li>Extract the archive</li>
+  <li>Go to the “examples” folder</li>
+  <li>
+    <p>Run:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>python va_benchmark.py
+</code></pre></div>    </div>
+  </li>
+  <li>You will see the system go through a series of processes from partitioning, to placement, to routing and finally to loading and running.</li>
+  <li>
+    <p>Once the example has finished, you should see a graph that will look something like this (for PyNN 0.9):</p>
+
+    <p><img src="./PyNN on SpiNNaker Installation Guide_files/va8_benchmark.png" alt="VABenchmarkSpikes"></p>
+  </li>
+</ol>
+
+<p>If you get the output above, you have successfully installed your system.</p>
+
+<h1 id="-troubleshooting"><a name="Trouble"></a> Troubleshooting</h1>
+
+<ol>
+  <li>
+    <p>If on Windows you experience the error:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>**UnicodeDecodeError: 'ascii' codec can't decode byte 0xb0 in position 1: ordinal not in range(128)**
+</code></pre></div>    </div>
+
+    <p>Then to solve it, edit <code class="highlighter-rouge">C:\Python27\Lib\mimetypes.py</code> and add these codes:</p>
+
+    <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">getdefaultencoding</span><span class="p">()</span> <span class="o">!=</span> <span class="s">'gbk'</span><span class="p">:</span>
+    <span class="nb">reload</span><span class="p">(</span><span class="n">sys</span><span class="p">)</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">setdefaultencoding</span><span class="p">(</span><span class="s">'gbk'</span><span class="p">)</span>
+</code></pre></div>    </div>
+
+    <p>before the following line:</p>
+
+    <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">default_encoding</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">getdefaultencoding</span><span class="p">()</span>
+</code></pre></div>    </div>
+  </li>
+  <li>
+    <p>In OSX, if experiencing the following tkinter error:</p>
+
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>_tkinter.TclError: no display name and no $DISPLAY environment variable
+</code></pre></div>    </div>
+
+    <p>it may be solved by setting the backend for matplotlib. This can be done by editing the matplotlibrc file in the current working directory to read to <code class="highlighter-rouge">backend: TkAgg</code>. This is usually found in <code class="highlighter-rouge">$DEV/lib/python2.7/site-packages/matplotlib/mpl-data/matplotlibrc</code></p>
+
+    <p>In a virtualenv, create a new file in the root directory <code class="highlighter-rouge">.matplotlib/matplotlibrc</code> that reads <code class="highlighter-rouge">backend: TkAgg</code>. (<a href="https://matplotlib.org/_static/matplotlibrc">Sample matplotlibrc file</a>)</p>
+
+    <p>If you are still having issues, you may also need to install <a href="https://www.xquartz.org/">XQuartz</a>.</p>
+  </li>
+</ol>
+
+        </section>
+
+        <!-- <aside id="sidebar">
+        </aside> -->
+      </div>
+    </div>
+
+
+  
+
+</body></html>

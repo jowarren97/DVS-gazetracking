@@ -1,0 +1,38 @@
+
+TD {  font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10pt
+}
+
+.title {
+        position: relative;
+        left: -17px;
+        padding-left: 17px;
+        color:#006699;
+        font-size: 13px;
+        font-weight: bold;
+        margin-top: 0px;
+}
+
+.small {font-size: 10px}
+a:active {color: #006699}
+a:link {color: #006699}
+a:visited {color: #006699}
+
+
+
+              h1 { color:orange; }
+              h2 { color:green; }
+              h3 { color:brown}
+              h4 { color:red; }
+              pre { color:grey; }
+
+body {
+	background: white;
+}
+
+p, li {
+	  font-family: Verdana, Arial;
+       text-align: justify; 
+       color:#002233;
+        margin-top: 0px;
+        width: 600px;
+}

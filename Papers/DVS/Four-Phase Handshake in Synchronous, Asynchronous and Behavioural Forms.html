@@ -1,0 +1,488 @@
+
+<!-- saved from url=(0063)https://www.cl.cam.ac.uk/~djg11/wwwhpr/fourphase/fourphase.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Four-Phase Handshake in Synchronous, Asynchronous and Behavioural Forms</title>
+
+
+<link rel="stylesheet" href="./Four-Phase Handshake in Synchronous, Asynchronous and Behavioural Forms_files/orangepath.css">
+
+</head><body bgcolor="white">
+
+<center>
+<h1>Four-Phase Handshake in Synchronous, Asynchronous and Behavioural Forms - Revision Notes</h1>
+
+
+
+
+
+
+
+
+<h2>0. Introduction</h2>
+
+<p>Of the many transactional protocols widely used in electronics to
+transfer data, the four-phase handshake is about the most common. The
+protocol provides rate adaptation, in that it has an idle state that
+it starts in and resets in when the sender is not ready to send, and
+in that it has backpressure or flow-control that prevents the sender
+sending further data when the receiver has no accommodation.
+
+
+</p><p>The familiar parallel port for printers uses an asynchronous
+four-phase handshake <a href="http://www.cl.cam.ac.uk/users/djg/teaching/slides.pdf">MY SHD
+SLIDES (PDF)</a>.
+
+</p><p>The protocol is defined at the net level using a request and an
+acknowledge signal and one or more data signals that carry the data:
+{req, ack, data[n]}. We here assume that there are sufficient data
+signals for all of the data to be conveyed in a single transaction to
+be carried in parallel over the interface.
+
+
+</p><p>At the net level, the system may be implemented with or without a
+shared clock.  When there is a shared clock, each participant updates
+its nets only during a specified interval in each clock cycle and so
+knows to only sample its inputs outside that interval. (Generally,
+outputs are updated in a delay window after the active clock edge and
+sampled in a non-overlapping window starting just before and ending
+just after the clock edge.)  Where each end system operates with a
+local clock, each signal must be correctly resynchronised to the local
+clock at the receiving end so as to avoid metastable failure.
+
+
+</p><p>Apart from synchronisation issues, there is an further, important,
+difference in the protocol that arises when a shared clock is present.
+Without a shared clock, exactly one transaction occurs per handshake
+cycle. With a shared clock, a stable setting of the handshake
+lines, sustained for n consecutive clock cycles can be used to indicate
+n back-to-back transactions.
+
+
+</p><p>The recent rise in interest of transactional interfaces in EDA can
+be considered as an exercise in interfacing between synchronous and
+asynchronous logic.  This is because it is desired to express the
+transactional interfaces without reference to clock nets, whereas the
+underlying RTL implementations must preferably be implemented with
+conventional synchronous design flows.
+
+
+</p><p>The four-phase handshake can be used between any pair peers that wish to
+exchange data, but for simplicity, in this note, we concentrate on
+FIFO stages that are chained to form the FIFO. This immediately
+results in multiple instances of the handshake protocol.  It should be
+noted that this study also applies when 4-phase is used to construct a
+systolic array or any other structure with processing at the nodes.
+Each FIFO stage receives data with from its left peer and sends it to
+its right peer using separate instances of the protocol.
+
+</p><h3>Overview of this note</h3>
+
+
+<p></p><li>1. Behavioural Forms.
+<p></p></li><li>2. Asynchronous Forms.
+<p></p></li><li>3. Synchronous Forms.
+<p></p></li><li>4. Reconciliations.
+
+
+<h2>1. Behavioural Forms</h2>
+
+
+<p>By a behavioural form, we mean that the behaviour of a component is expressed using
+an imperative program whose statements are executed sequentially.  However, many
+statements can be considered to execute in zero time, meaning that in a hardware
+implementation, all of the effects of a consecutive group become visible in one step.
+
+</p><h3>Naive Behavioural Blocking Code</h3>
+
+<p>The nets are modelled as shared variables visible to the sender and receiver.
+A behavioural program to implement the interface is:
+</p><pre>  o1.send(D)                        o2.recv()
+   {                                 {
+     while (ack) wait();               while(!req) wait;
+     data = D;                         D = data;
+     sync();                           ack = 1;
+     req = 1;                          while (req) wait();
+     while (!ack) wait();              ack = 0; 
+     req = 0;                          return D;
+   }                                 }
+</pre>
+The call to sync is a write barrier that ensures the data is visible
+on all data nets at the receiver before the req is asserted.  In a software
+implementation, this is a special instruction on the processor and in a
+hardware implementation it is a time delay longer than the skew of the
+nets that make up the interface. Most hardware or software systems do
+not require an equivalent barrier in the receiver (see 
+http://www.cl.cam.ac.uk/users/kaf24/mem.txt for details).
+
+
+<p>It is possible to make a FIFO stage by putting a send and receive together in
+an infinite loop. A chain of these stages, running in parallel, form a FIFO queue.
+</p><pre>  while(1) o2.send(o1.recv());
+  while(1) o3.send(o2.recv());
+  while(1) o4.send(o3.recv());
+  ...
+</pre>
+
+
+<h3>Improved Behavioural Blocking Code</h3>
+
+<p>We note that both client and server routines are blocking, in that
+they spinlock on wait.   In an improved version, both threads remain
+blocking but the scheduler accepts
+a guard condition to wait on:
+</p><pre>  o1.send(D)                         o2.recv()
+   {                                 {
+     while (ack) wait(ack);            while(!req) wait (!req);
+     data = D;                         D = data;
+     sync();                           ack = 1;
+     req = 1;                          while (req) wait(req);
+     while (!ack) wait(!ack);          ack = 0; 
+     req = 0;                          return D;
+   }                                 }
+</pre>
+
+
+<p>The while loops are still shown in the above code because
+the wait call is avoided if the guard already holds and because,
+in many systems, a wakeup may occur for a wide variety of reasons, not
+necessarily just the condition that was being waited on. 
+
+</p><h3>Event Variable Blocking Code</h3>
+
+<p>Many systems do not allow waiting on arbitrary conditions. All waits
+must be on a system event variable, and so the interface must be
+extended to contain such a variable. When no multiplexing is implemented,
+a single event variable, can be shared by both sides of the interface, but here
+we show a pair, R and A.
+As with the shared net declarations
+themselves, this event variable may be declared by the receiver, the
+transmitter or by the host that introduced the peers.
+</p><pre>  o1.send(D)                         o2.recv()
+   {                                  {
+     while (ack) wait(A);               while(!req) wait (R);
+     data = D;                          D = data;
+     sync();                            ack = 1;
+     req = 1;                           A.signal();
+     R.signal();                        while (req) wait(R;
+     while (!ack) wait(A);              ack = 0; 
+     req = 0;                           A.signal();
+     R.signal();                        return D;
+   }                                 }
+</pre>
+
+
+<p>This version of the interface can be implemented with fewer tests
+than shown, but it then becomes unable to recover from the sender
+and receiver becoming desynchronised. Practical systems are implemented
+to recover from this error, or else two-phase handshaking is used, that
+intrinsically does not suffer.
+
+</p><h3>Two-Phase Handshake</h3>
+For reference, the two-phase handshaking implementation is:
+
+<pre>  o1.send(D)                         o2.recv()
+   {                                   {
+     data = D;                           r = req;
+     sync();                             while(r==req) wait();    
+     a = ack;                            D = data;
+     req = !req;                         ack = !ack;
+     while (a==ack) wait()               return D;
+   }                                   }
+</pre>
+
+ 
+<h3>Multiplexing</h3>
+
+
+<p>Dynamic binding of transactional interfaces is a logical way to
+implement multiplexors and demultiplexors.  In pure software systems,
+multiplexing is implemented by a number of clients being able to
+calling a common subroutine and demultiplexing is implemented by a
+number of servers being able to register an upcall (sometimes called a
+callback) and allowing the client to select which subroutine to call
+(known in software as dispatching).
+
+
+</p><p>To implement the multiplexing behavioural interface, separate event
+variables should be associated with the req and ack signals.
+
+</p><h2>2. Asynchronous Forms (including Micropipelines)</h2>
+
+In asynchronous logic, a (Sutherland) micropipeline FIFO structure is
+sometimes used.  This is a chain of half-stages that each consist of a
+Muller C element, an XOR gate and a transparent latch to hold the
+data. A pair of half stages give the equivalent of a master-slave
+edge-triggered structure.  
+
+
+<p>Here is the standard Muller C element and four stage ripple FIFO oscillator:
+</p><pre>
+
+// A Muller C-element
+module MCEL (q, a, b);
+  input a, b;
+  output q;
+  wire reset;
+  wire p1 = !(a &amp; q);
+  wire q1 = !(b &amp; q);
+  wire r1 = !(a &amp; b);
+  assign #13 q = !(p1 &amp; q1 &amp; r1);
+endmodule
+
+//Micropipeline stage (David Sutherland style).
+module MPHSL(req_l, ack_l, req_r, ack_r, din,dout);
+   input req_l; output ack_l; 
+   output req_r; input ack_r;
+   MCEL left(ack_l, req_l, !req_r);
+   MCEL right(req_r, ack_l, !ack_r);
+
+   // Data handling stage
+   input [7:0] din;
+   output [7:0] dout;
+   reg [7:0] dout1;
+   always @(posedge req_l) dout1 &lt;= din;
+   assign dout = dout1;
+endmodule
+</pre>
+
+
+<p>Here we used a master-slave, edge-triggered register for the data
+stages, although a pair of tandem transparent latches is often
+shown in the literature.
+
+</p><h4>A simple testbench using four FIFO stages.</h4>
+<pre>// Simulation wrapper
+module SIMSYS();
+  wire req_1, ack_1;
+  wire req_2, ack_2;
+  wire req_3, ack_3;
+  wire req_4, ack_4;
+
+  reg tn;
+  initial begin tn = 0; #350 tn = 1; # 20 tn = 0; end
+
+  wire [7:0] d1,d2,d3,d4;
+  MPHSL s1(tn | req_4,      ack_4, req_1, ack_1, (tn)? 8'hx5A: d4+1, d1);
+  MPHSL s2(req_1,           ack_1, req_2, ack_2,  d1, d2);
+  MPHSL s3(req_2,           ack_2, req_3, ack_3, d2, d3);
+  MPHSL s4(req_3,           ack_3, req_4, ack_4, d3, d4);
+endmodule
+</pre>
+
+
+<p>Simulation waveforms from this circuit are:
+</p><p></p><center><img src="./Four-Phase Handshake in Synchronous, Asynchronous and Behavioural Forms_files/sutherlandpipeline.gif"></center>
+
+
+<h3>Alternate Form</h3>
+
+
+<p>We can change the form of the pipeline stage to just use an RS-latch.
+This results in data moving through faster.
+
+</p><pre>//DJG Micropipeline stage
+module MPHSL(req_l, ack_l, req_r, ack_r, din, dout);
+   input req_l; output ack_l; 
+   output req_r; input ack_r;
+
+   wire s, r, q, qb;
+   assign #13 q = !(r | qb); // RS latch made from
+   assign #1 qb = !(s | q);  // cross-coupled NORs.
+
+   assign s = req_l;
+   assign r = ack_r;
+   assign ack_l = q;
+   assign req_r = q;
+ 
+
+   // Data handling stage
+   input [7:0] din;
+   output [7:0] dout;
+   reg [7:0] dout1;
+   always @(posedge req_l) dout1 &lt;= din;
+   assign dout = dout1;
+endmodule
+</pre>
+
+<p>Using the same testbench, simulation waveforms from this circuit are:
+</p><p></p><center><img src="./Four-Phase Handshake in Synchronous, Asynchronous and Behavioural Forms_files/djgpipeline.gif"></center>
+
+
+<h4>Asynchronous Compiler</h4>
+
+<p>For passing interest we can examine the FIFO stage generated by the
+<a href="http://www.cl.cam.ac.uk/users/djg/wwwhpr/gpibpage.html">Orangepath H2 asynchronous compiler</a>
+when presented with the following
+input.  In H2, ideally, we should define the handshake for a single interface  
+and then get H2 to join together the input and output interfaces of the
+stage, but instead we here interconnect the two interfaces manually
+with one behavioural thread:
+
+</p><pre>  interface FIFO
+  {
+     forward:   
+       node in [7:0]: data;
+       node in: req;
+       node out: ack;
+  }
+
+  section FIFOSTAGE
+  {
+     node forward interface FIFO: left;
+     node reverse interface FIFO: right;
+     protocol FIFOSTAGE;
+  }  
+
+  protocol FIFOSTAGE
+  {
+  statemachine()
+    {
+      // Receiver 4-phase code inlined.
+      wait(left.req); D = left.data; left.ack = 1; wait(!left.req); left.ack = 0;
+
+      // Sender 4-phase code inlined.
+      wait(!right.ack); right.data = D; right.req = 1; wait(right.ack); right.ack = 0;
+    }
+  }
+</pre>
+
+<p>The generated output will be placed on this link and a simulation trace placed HERE.
+
+
+
+
+</p><h4>Synchronous Compiler</h4>
+
+<p>The same source code can be fed to a "behavioural software to synchronous
+logic compiler".  A simple version of such a tool replaces each wait() call
+with a one-clock-cycle delay.  The `while' statements enclosing each
+wait statement then take on a specific role: the microsequencer sits
+at that wait statement until the required exit condition holds.
+
+
+</p><p>The generated output and trace to be placed HERE.
+
+</p><p>Clearly, such a compiler will consume far more clock cycles than the hand-optimised
+synchronous implementation given in the next section. However, it is interesting
+to test whether the two implementations bisimulate each other when the clock input
+changes are considered to be tau (delta) transitions. TODO.
+
+
+
+
+</p><h2>3. Synchronous Variation</h2>
+
+
+<h3>Basic Synchronous Alternate Protocol</h3>
+
+<p>The most convenient way to implement the handshaked in synchronous
+logic is to use a slightly different protocol that uses
+a rdy signal instead of an ack signal.  Data is transferred
+on every clock edge where req and rdy are both asserted.  Therefore, multiple
+words are transferred, back-to-back,  without executing the protocol.
+
+
+A Verilog RTL implementation of a FIFO stage that implements this protocol would be
+as follows:
+</p><pre>  module sfifo(clk, req_l, data_l, rdy_l, req_r, data_r, rdy_r);
+    input clk;
+    input req_l, req_r;
+    output rdy_l, rdy_r;
+    input [N:0] data_l;
+    output [N:0] data_r; 
+ 
+    reg logged;  reg[N:0] holding;
+    assign req_r = logged, data_r = holding;   
+    always @(posedge clk) begin
+        if (req_l &amp; rdy_l) holding &lt;= data_l;
+	logged &lt;= req_l | (logged &amp; !rdy_r);
+	end
+   
+   assign rdy_l = !logged | rdy_r;
+
+endmodule
+</pre>
+
+
+<h3>Postprocessing to reduce clock cycle consumption</h3>
+
+
+
+<p>The synchronous variation has synchronous Moore outputs to the next
+(right) FIFO stage but the rdy signal to the previous (left) FIFO
+stage is a Mealy function of the right rdy signal.  A cascade of
+stages leads to combinatorial delay growth in the rdy signal path.
+This build up cannot be avoided if one desires the property that the
+input to the FIFO goes ready as soon as any stage further down or the
+output itself goes ready.  If Moore outputs were used for the
+backpressure path (the rdy signals), then extensive numbers of FIFO
+empty stage `bubbles' would exist, because the input side would not be
+able to insert data as soon as possible.  This leads to wasted clock
+cycles in the system and hence reduced throughput.
+
+
+</p><p>Both Mealy and Moore ready outputs cause speed problems if used
+exclusively, it turns out that the best approach is to mix them, using
+mostly Mealys.  Rather than generating a mix to start with, one 
+can generate a system as shown above, using only Mealys, and then apply
+post-processing to improve performance. 
+
+
+</p><p> The first style of post processing is to exactly mirror carry
+lookahead.  In carry lookahead, as used in fast adder circuits, the
+chain of the ripple carry path is replaced with a log-n depth tree
+structure where the base of the log is essentially the fanin of the
+widest AND and OR gates in the logic family.  For our handshake
+circuits, the lookahead is applied to the ready signals and quickly
+computes the OR of all ready signals further down the chain.
+
+
+</p><p>The second style of post processing is to add pipeline stages at regularly
+spaced places.  These stages convert the end of the Mealy chain (or lookahead
+unit output) to a Moore signal that is re-timed with the clock.
+
+
+
+</p><h2>4. Unification of the Variations</h2>
+
+
+
+<p>The interesting thing now is to compare all these design styles and
+find a formalism under which they may be shown to be equivalent.
+
+
+</p><p> We wish to study how a clock structure can
+be added and removed as we move from behavioural to synchronous implementations.
+Although asynchronous hardware remains somewhat of a specialist area,
+migration from untimed-behavioural specifications to synchronous RTL
+is the main focus of the so-called ESL modelling style being advocated in the
+EDA industry.  Study of the asynchronous styles within our formalisms
+will lead to useful insight.
+
+
+
+</p><p>Definition: let us call the following circuit a 'synchronous RS latch
+with setting priority'
+</p><pre>    always @(posedge clk) logged &lt;= s | (logged &amp; !r);
+</pre>
+
+<p>The essence of our unification of the various styles is that
+the four-phase micropipeline can be reduced to the simplified RS
+latch form given certain assumptions about relative timing of
+the inputs to a stage.  The RS latch may then be observed to
+have a very similar form to the synchronous RS latch used in
+the synchronous pipeline stage.
+
+
+</p><p>Sadly, the best bits of this note are yet to be written...
+
+
+
+
+
+</p><p>(C) 2004 DJG.  &nbsp; &nbsp; &nbsp; &nbsp; <a href="https://www.cl.cam.ac.uk/~djg11/wwwhpr/index.html">UP</a>.
+
+
+
+
+
+</p></li></center></body></html>

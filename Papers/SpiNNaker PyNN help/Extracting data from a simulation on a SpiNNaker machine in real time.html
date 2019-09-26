@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!-- saved from url=(0097)http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#liveoutput -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="shortcut icon" href="http://spinnakermanchester.github.io/images/favicon.png">
+    <link href="./Extracting data from a simulation on a SpiNNaker machine in real time_files/css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="./Extracting data from a simulation on a SpiNNaker machine in real time_files/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="./Extracting data from a simulation on a SpiNNaker machine in real time_files/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="./Extracting data from a simulation on a SpiNNaker machine in real time_files/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Extracting data from a simulation on a SpiNNaker machine in real time</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Extracting data from a simulation on a SpiNNaker machine in real time</h1>
+      </div>
+      <a href="https://github.com/SpiNNakerManchester" class="button"><small>Follow me on</small> GitHub</a>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+        <p>this page describes how to use the SpiNNaker tool chain to support real time data extraction from an application running on a SpiNNaker machine.</p>
+
+<h1 id="page-contents">Page Contents</h1>
+<ul>
+  <li><a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#installation">Installation Instructions</a></li>
+  <li><a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#disclaimer">Ethos and Disclaimer</a></li>
+  <li>[How real Time output works] (#outputdef)</li>
+  <li>[Constraints] (#constraints)</li>
+  <li><a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#liveoutput">PyNN setting up for live output</a></li>
+  <li><a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#python_based">Python Based Reciever</a></li>
+  <li><a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#c_based">C Based Reciever</a></li>
+  <li><a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#trouble">Troubleshooting</a></li>
+</ul>
+
+<h1 id="-installation-instructions"><a name="installation"></a> Installation Instructions</h1>
+
+<p>To support a live stream of data from a SpiNNaker machine, requires installation of the 
+<a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008"><strong>sPyNNakerExternalDevicesPlugin</strong></a>  which requires the end user to <strong>open a terminal / cmd prompt</strong> and run the command:</p>
+
+<p><code class="highlighter-rouge">pip install sPyNNakerExternalDevicesPlugin</code></p>
+
+<p>This now allows the sPyNNakerExternalDevicesPlugin module to be imported to your PyNN script though the command:</p>
+
+<p><code class="highlighter-rouge">import spynnaker_external_devices_plugin.pyNN as externaldevices</code></p>
+
+<p>If you need to upgrade the version of the module at any point in the future, this can be done by <a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/ExtractingDataRealTime.html#uninstall">uninstalling</a> and re-installing the module.</p>
+
+<h1 id="-uninstall-instructions"><a name="uninstall"></a> Uninstall Instructions</h1>
+
+<p>To uninstall the current version of the plugin, the end user can <strong>open a terminal / cmd prompt</strong> and run the command:</p>
+
+<p><code class="highlighter-rouge">pip uninstall sPyNNakerExternalDevicesPlugin</code></p>
+
+<h2 id="-pynn-compatibility"><a name="compatibility"></a> PyNN compatibility</h2>
+
+<p>The support for live data extraction from SpiNNaker has been developed within the sPyNNakerExternalDevicesPlugin module, to acknowledge that these features are provided in addition to standard PyNN functionality.  The models provided are, however, compatible with PyNN, and are usable in the same way as other spike-producing models i.e. by specifying them as the model of a PyNN Population.</p>
+
+<p>The model that supports live data extraction from a SpiNNaker machine is called the LivePacketGather.  The LivePacketGather model sends packets in <a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/EIEIOProtocolProposal.pdf">EIEIO format</a> via the Ethernet interface.</p>
+
+<h2 id="-how-real-time-output-works"><a name="outputdef"></a> How real time output works</h2>
+
+<p>This section describes how the tool chain infrastructure works within the SpiNNaker machine. Below is a diagram which describes how packets from a collection of cores, been programmed to transmit packets outside the SpiNNaker machine, via the ethernet, are routed. Packets transmitted from cores are not directly transmitted outside the SpiNNaker machine; Instead these packets are relayed to a <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008/spynnaker_external_devices_plugin/pyNN/control_models/live_packet_gather.py">LivePacketGather</a> which resides on <strong><em>chip 0,0</em></strong>. The <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008/spynnaker_external_devices_plugin/pyNN/control_models/live_packet_gather.py">LivePacketGather</a> then collates the packets and transmits them at the next available timer tic.</p>
+
+<p><strong>NOTE:</strong> Packets are relayed to a gathering point before being sent out down the Ethernet because letting the collection of cores transmit their packets directly to the Ethernet will result in multiple versions of the same header being transmitted. Because the Ethernet bandwidth is the biggest limiting factor on how much data can be transmitted, (<strong>approximately 2820 bytes</strong> per millisecond)  this means that reducing the number of headers is important. Gathering in a single point and sending one header saves bandwidth for the limitation of a 1 timer tic delay.</p>
+
+<p><img src="./Extracting data from a simulation on a SpiNNaker machine in real time_files/recievier_inside_spinnaker.jpg" alt="Transmissions between cores"></p>
+
+<p>Each <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008/spynnaker_external_devices_plugin/pyNN/control_models/live_packet_gather.py">Live_packet_gather</a> is associated with a specific IP-Tag which controls what port and host is used when relaying packets outside a Ethernet port.</p>
+
+<p><strong>NOTE:</strong> Each Ethernet controlled chip has 8 iptags which are programmable, the tool chain automatically assigns these tags to each <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008/spynnaker_external_devices_plugin/pyNN/control_models/live_packet_gather.py">live_packet_gather</a> and so should not be worried about.</p>
+
+<p><img src="./Extracting data from a simulation on a SpiNNaker machine in real time_files/interface_between_chip_and_machine.png" alt="IPTags"></p>
+
+<h2 id="-constraints"><a name="constraints"></a> Constraints</h2>
+
+<p>The <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008/spynnaker_external_devices_plugin/pyNN/control_models/reverse_ip_tag_multi_cast_source.py">reverse_iptag_multi_cast_vertex</a> and the <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.008/spynnaker_external_devices_plugin/pyNN/control_models/live_packet_gather.py">live_packet_gather</a> share these resources of the IP-Tags and the bandwidth of the Ethernet connection; therefore please use these models sparingly.</p>
+
+<p>The 2820 bytes per millisecond is a total bandwidth in both input and output through the Ethernet connection; therefore decisions must be made at compile time to what data should be transmitted.</p>
+
+<h2 id="-pynn-setting-up-for-live-output"><a name="liveoutput"></a> PyNN setting up for live output</h2>
+
+<p>This section defines how to set up a PyNN script to produce live_output by using the example <a href="https://github.com/SpiNNakerManchester/PyNNExamples/tree/2015.002/examples/external_device_examples/receiving_scripts/live_packet_output_synfire_chain.py">live_packet_output_synfire_chain</a>. The lines in the script requiring care are lines 7 and 64. Line 7 imports the ExternalDevicePlugin module and line 64 declares that the first population within this list is to be set for live output.</p>
+
+<p><code class="highlighter-rouge">import spynnaker_external_devices_plugin.pyNN as q
+</code>q.activate_live_output_for(populations[0])</p>
+
+<h2 id="-python-based-receiver"><a name="python_based"></a> Python Based Receiver</h2>
+
+<p>Creating a receiver from a python script, requires a “receiver” to be built which is set up to receive EIEIO Data packets. In a basic PyNN script, this could be build before <strong>p.run()</strong> is ran.</p>
+
+<p>NOTE: Recommendation is to create your listener in a separate file and run them in parallel.</p>
+
+<p>In <a href="https://github.com/SpiNNakerManchester/PyNNExamples/tree/2015.002/examples/external_device_examples/receiving_scripts/live_receiver.py">live_receiver</a>, a self contained script which registers a listener for a StrippedIPTagConnection and prints out the packet when received.</p>
+
+<p>The lines are as follows:</p>
+
+<p><code class="highlighter-rouge">from spinnman.connections.udp_packet_connections.stripped_iptag_connection \</code>
+    <code class="highlighter-rouge">import StrippedIPTagConnection</code>
+<code class="highlighter-rouge">from spinnman import constants</code>
+<code class="highlighter-rouge">from spynnaker.pyNN.utilities.conf import config</code>
+<code class="highlighter-rouge">import time</code></p>
+
+<p><code class="highlighter-rouge">def packet_callback(packet):</code>
+    <code class="highlighter-rouge">pass</code>
+    <code class="highlighter-rouge">#Do something here</code></p>
+
+<p><code class="highlighter-rouge">packet_grabber = \</code>
+    <code class="highlighter-rouge">StrippedIPTagConnection(local_port=config.get("Recording", </code>
+                                                  <code class="highlighter-rouge">"live_spike_port"))</code>
+<code class="highlighter-rouge">packet_grabber.register_callback(packet_callback, </code>
+                                 <code class="highlighter-rouge">constants.TRAFFIC_TYPE.EIEIO_DATA)</code></p>
+
+<p><code class="highlighter-rouge">#sleep for the length of the simulation</code></p>
+
+<p><code class="highlighter-rouge">time.sleep(XXXXXX)</code></p>
+
+<p>In the first 2 lines, can be seen the importing of a collection of classes from the Spinnman module. These are the connection which supports EIEIO data packets (these are what the <a href="https://github.com/SpiNNakerManchester/sPyNNakerExternalDevicesPlugin/tree/2015.002/spynnaker_external_devices_plugin/pyNN/control_models/live_packet_gather.py">live_packet_gather</a> generates) and the constants used by the spinnman module.</p>
+
+<p>The next two imports are just to allow easier access to the end users spynnaker.cfg file and a function which will stop the thread from ending prematurely.</p>
+
+<p>The lines 8 and 9 defines a function which prints out a packet when called.</p>
+
+<p>Lines 11, 12 and 13 shows the definition of a connection which listens for EIEIO data packets on the default port used by the tool chain for packet output.</p>
+
+<p>Lines 14 and 15 register the function defined in lines 8 and 9 to be called when the connection receives a packet.</p>
+
+<p>Finally line 19 tells the thread to sleep, which will keep it running whilst the original PyNN script is set off, mapped and ran on the SpiNNaker machine.</p>
+
+<h2 id="-c-based-receiver"><a name="c_based"></a> C Based Receiver</h2>
+
+<p>If interested in using a c based listener, refer to page <a href="http://spinnakermanchester.github.io/2015.004.LittleRascal/VisualiserFramework">2.4 Visualiser framework</a></p>
+
+<h2 id="-troubleshooting"><a name="trouble"></a> Troubleshooting</h2>
+
+<p><strong>Packets are not coming out of SpiNNaker</strong></p>
+
+<ol>
+  <li>This could also be due to having a firewall configured to reject UDP packets. Configuring a firewall is os dependent, and so is outside of the scope of this document.</li>
+</ol>
+
+        </section>
+
+        <!-- <aside id="sidebar">
+        </aside> -->
+      </div>
+    </div>
+
+
+  
+
+</body></html>
