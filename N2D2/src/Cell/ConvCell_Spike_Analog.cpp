@@ -245,8 +245,9 @@ void N2D2::ConvCell_Spike_Analog::incomingSpike(NodeIn* origin,
 
             // Lateral inhibition
             mOutputsIntegration.assign(
-                {mOutputsDims[0], mOutputsDims[1], getNbOutputs(), 1}, 0.0);
+                {mOutputsDims[0], mOutputsDims[1], getNbOutputs(), 1}, 0.0); //assign the integration value of all neur as 0.0
 
+			//update inhib refract period for all neurons (of other feature maps)
             if (mInhibitRefractory > 0) {
                 std::replace_if(mOutputsRefractoryEnd.begin(),
                                 mOutputsRefractoryEnd.end(),
@@ -257,6 +258,7 @@ void N2D2::ConvCell_Spike_Analog::incomingSpike(NodeIn* origin,
             }
         }
 
+		//set (all) neuron(s) of current feature map to refractory period
         refractoryEnd = timestamp + mRefractory; // Set the refractory period to
         // mRefractory, AFTER lateral
         // inhibition

@@ -105,7 +105,7 @@ N2D2::ConvCell_Spike::ConvCell_Spike(Network& net,
 void N2D2::ConvCell_Spike::initialize()
 {
     mSharedSynapses.resize(
-        {mKernelDims[0], mKernelDims[1], getNbChannels(), getNbOutputs()});
+        {mKernelDims[0], mKernelDims[1], getNbChannels(), getNbOutputs()}); //reshape mSharedSynapses into 4D array (i.e. 2D kernel for each input channel for each node)
 
     for (unsigned int index = 0, size = mSharedSynapses.size(); index < size;
          ++index)
