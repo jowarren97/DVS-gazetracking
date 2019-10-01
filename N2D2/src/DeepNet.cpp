@@ -548,25 +548,25 @@ std::vector<unsigned int> N2D2::DeepNet::getReceptiveField(
     const std::vector<unsigned int>& outputField) const
 {
     const std::map<std::string, std::shared_ptr<Cell> >::const_iterator itCell
-        = mCells.find(name);
+        = mCells.find(name); //find location of cell that was passed as argument to fctn
     const std::vector<unsigned int> cellReceptiveField
-        = (*itCell).second->getReceptiveField(outputField);
+        = (*itCell).second->getReceptiveField(outputField); //THIS ISNT IMPLEMENTED?
 
-    const std::vector<std::shared_ptr<Cell> > parents = getParentCells(name);
+    const std::vector<std::shared_ptr<Cell> > parents = getParentCells(name); //find parents of cell
     std::vector<unsigned int> maxReceptiveField(
                                 (*itCell).second->getOutputsDims().size(), 0);
     bool hasParent = false;
 
     for (std::vector<std::shared_ptr<Cell> >::const_iterator
-         it = parents.begin(), itEnd = parents.end(); it != itEnd; ++it)
+         it = parents.begin(), itEnd = parents.end(); it != itEnd; ++it) //loop thru parents for cell
     {
         if (*it) {
             const std::vector<unsigned int> receptiveField
-                = getReceptiveField((*it)->getName(), cellReceptiveField);
+                = getReceptiveField((*it)->getName(), cellReceptiveField); //get receptive field of parent - this will be recursive
 
             std::transform(receptiveField.begin(), receptiveField.end(),
                            maxReceptiveField.begin(), maxReceptiveField.begin(),
-                           Utils::max<unsigned int>());
+                           Utils::max<unsigned int>()); //DONT UNDERSTAND THIS
 
             hasParent = true;
         }
@@ -2568,15 +2568,15 @@ void N2D2::DeepNet::logReceptiveFields(const std::string& fileName) const
     const unsigned int objOffset = 5;
 
     for (std::vector<std::vector<std::string> >::const_iterator it
-         = mLayers.begin() + 1, itEnd = mLayers.end(); it != itEnd; ++it)
+         = mLayers.begin() + 1, itEnd = mLayers.end(); it != itEnd; ++it) //Loop through layers in deepnet
     {
         for (std::vector<std::string>::const_iterator itCell = (*it).begin(),
                                                       itCellEnd = (*it).end();
-             itCell != itCellEnd; ++itCell)
+             itCell != itCellEnd; ++itCell) //Loop through cells within layer
         {
-            const std::shared_ptr<Cell> cell = (*mCells.find(*itCell)).second;
+            const std::shared_ptr<Cell> cell = (*mCells.find(*itCell)).second; //locate cell
             const std::vector<unsigned int> receptiveField
-                = getReceptiveField(*itCell);
+                = getReceptiveField(*itCell); //get receptive field from cell
 
             receptiveFields << (*itCell)
                 << " " << cell->getReceptiveField()

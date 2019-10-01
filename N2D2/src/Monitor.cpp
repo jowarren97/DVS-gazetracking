@@ -254,7 +254,7 @@ bool N2D2::Monitor::checkLearningResponse(unsigned int cls,
         }
     }
 
-    mSuccess.push_back(success);
+    mSuccess.push_back(success); //add success/fail to deque (deque is like a queue that is expandable at both ends) - this is needed for successrate calc
     return success;
 }
 
@@ -322,13 +322,16 @@ double N2D2::Monitor::getSuccessRate(unsigned int avgWindow) const
 {
     const unsigned int size = mSuccess.size();
 
-    if (size > 0) {
+    if (size > 0) { //if any samples...
         return (avgWindow > 0 && size > avgWindow)
                    ? std::accumulate(mSuccess.end() - avgWindow,
                                      mSuccess.end(),
                                      0.0) / avgWindow
                    : std::accumulate(mSuccess.begin(), mSuccess.end(), 0.0)
                      / size;
+		//basically take #'avgWindow' most recent trials & calc success rate
+		//std::accumulate counts values in range, with final arg = initial value 0.0.
+		//If deque size < avgWindow then just use entire deque
     } else
         return 0.0;
 }
