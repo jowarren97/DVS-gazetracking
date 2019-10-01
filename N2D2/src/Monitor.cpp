@@ -210,35 +210,43 @@ bool N2D2::Monitor::checkLearningResponse(unsigned int cls,
                                           NodeId_T responseId,
                                           bool update)
 {
+	//FUNCTION BASICALLY DESIGNATES CLASS FOR NODE - CLASS FOR WHICH IT ACTIVATES MOST FREQUENTLY
+	//IF IT ACTIVATED FOR CLS AND THIS IS NOT THE SAME AS DESIGNATED CLASS, FAIL. OTHERWISE SUCCESS.
+	//THEN HAVE TO UPDATE LIST OF PREV ACTIVATIONS (INCASE WE NEED TO CHANGE DESIGNATED CLASS FOR NODE)
     bool success = false;
 
-    if (mMostActiveRate > 0) {
+    if (mMostActiveRate > 0) { //if we have active (output) nodes
         std::map
             <NodeId_T, std::map<unsigned int, unsigned int> >::iterator itStats;
         std::tie(itStats, std::ignore) = mStats.insert(
-            std::make_pair(responseId, std::map<unsigned int, unsigned int>()));
+            std::make_pair(responseId, std::map<unsigned int, unsigned int>())); //itStats is an iterator pointing the pair that was just added to mStats
+																				 //map::insert returns pair with first value as iterator and second as true/false if insertion successful
 
         std::map<unsigned int, unsigned int>::iterator itStatsNode
-            = (*itStats).second.find(cls);
+            = (*itStats).second.find(cls); //search for class in map associated to responseId key (first time map should be empty)
+										   //N.B returns iterator if found or map::end if not
 
+		//MAP1 keys are responseID's with MAP2s as elements -> each responseID has a MAP2.
+		//MAP2 contains list of classes and number of times node has previously activated for each class
+		
         if (update) {
-            if (itStatsNode != (*itStats).second.end())
+            if (itStatsNode != (*itStats).second.end()) //i.e if iterator found, increment element with key cls
                 ++(*itStatsNode).second;
             else
-                (*itStats).second.insert(std::make_pair(cls, 1));
+                (*itStats).second.insert(std::make_pair(cls, 1)); //if first time, add row with class & 1 'activation'
         }
 
-        if (itStatsNode != (*itStats).second.end()) {
+        if (itStatsNode != (*itStats).second.end()) { //if not first activation in response to this class
             success = true;
 
             for (std::map<unsigned int, unsigned int>::const_iterator it
                  = (*itStats).second.begin(),
                  itEnd = (*itStats).second.end();
                  it != itEnd;
-                 ++it) {
+                 ++it) { //loop through all classes
                 // >= plutôt que > me parait plus strict et rigoureux
                 if ((*it).second >= (*itStatsNode).second && (*it).first
-                                                             != cls) {
+                                                             != cls) { //if have more activations in a class that is not cls (i.e. target) then FAIL
                     success = false;
                     break;
                 }

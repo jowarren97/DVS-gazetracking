@@ -49,8 +49,8 @@ void N2D2::N_MNIST_Database::load(const std::string& dataPath,
             std::ifstream fileExists(nameStr.str());
             if (fileExists) {
 
-                mStimuli.push_back(Stimulus(nameStr.str(), cls));
-                mStimuliSets(Unpartitioned).push_back(mStimuli.size() - 1);
+                mStimuli.push_back(Stimulus(nameStr.str(), cls)); //add stimuli & class
+                mStimuliSets(Unpartitioned).push_back(mStimuli.size() - 1); //push back indices of stimuli
             }
         }
     }
@@ -69,7 +69,7 @@ void N2D2::N_MNIST_Database::load(const std::string& dataPath,
 
             std::ostringstream nameStr;
             nameStr << dataPath << "/Test/" << cls << "/";
-            nameStr << std::setfill('0') << std::setw(5) << i << ".bin";
+            nameStr << std::setfill('0') << std::setw(5) << i << ".bin"; //setfill sets default char of str to '0', while width makes length 5 (00000)
 
 
             std::ifstream fileExists(nameStr.str());
