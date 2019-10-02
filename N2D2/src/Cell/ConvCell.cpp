@@ -880,12 +880,14 @@ void N2D2::ConvCell::getStats(Stats& stats) const
     stats.nbConnections += nbVirtualSynapses;
 }
 
+//N.B this only gives size of RF, not RF itself
 std::vector<unsigned int> N2D2::ConvCell::getReceptiveField(
     const std::vector<unsigned int>& outputField) const
 {
     std::vector<unsigned int> receptiveField(outputField);
     receptiveField.resize(mKernelDims.size(), 1);
 
+	//loop thru dimensions of kernel
     for (unsigned int dim = 0; dim < mKernelDims.size(); ++dim) {
         const int kernelExtent
             = mDilationDims[dim] * (mKernelDims[dim] - 1) + 1;

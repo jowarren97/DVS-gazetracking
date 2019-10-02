@@ -1308,6 +1308,7 @@ void learnStdp(const Options& opt, std::shared_ptr<DeepNet>& deepNet,
                     << (i + 1) * presentTime / (double)TimeS << "s..."
                     << std::endl;
 
+		std::cout << "Reading database..." << std::endl;
         Database::StimulusID id;
         if (env->isAerMode()) {
             id = env->readRandomAerStimulus(Database::Learn,
@@ -1319,18 +1320,21 @@ void learnStdp(const Options& opt, std::shared_ptr<DeepNet>& deepNet,
         else {
             id = env->readRandomStimulus(Database::Learn);
         }
+        std::cout << "Propagating..." << std::endl;
         env->propagate(i * presentTime, (i + 1) * presentTime);
         net.run((i + 1) * presentTime);
-
+        std::cout << "Checking activity." << std::endl;
         // Check activity
         std::vector<std::pair<std::string, long long int> > activity
             = deepNet->update(
                 logStep, i * presentTime, (i + 1) * presentTime, logStep);
 
+		std::cout << "Updating monitor." << std::endl;
         monitorEnv.update();
 
         long long int sumActivity = 0;
 
+		std::cout << "Summing activity." << std::endl;
         for (std::vector
                 <std::pair<std::string, long long int> >::const_iterator it
                 = activity.begin(),
