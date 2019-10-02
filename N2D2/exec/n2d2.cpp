@@ -1366,7 +1366,9 @@ void learnStdp(const Options& opt, std::shared_ptr<DeepNet>& deepNet,
 
         if (logStep) {
             deepNet->exportNetworkFreeParameters("weights_stdp");
-            deepNet->logFreeParameters("kernels");
+            deepNet->logFreeParameters("kernels"); //---> cell::logFreeParam --(virtual)--> ConvCell::logFreeParam  (gets weight kernels)
+												   //									     	|-----> stimuliProvider::logData 
+												   //												    (just visualises 1D/2D/3D data in specified dir)
 
             monitorOut.logSuccessRate(
                 "learning_success_spike.dat", opt.avgWindow, true);

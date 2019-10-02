@@ -566,7 +566,7 @@ std::vector<unsigned int> N2D2::DeepNet::getReceptiveField(
 
             std::transform(receptiveField.begin(), receptiveField.end(),
                            maxReceptiveField.begin(), maxReceptiveField.begin(),
-                           Utils::max<unsigned int>()); //DONT UNDERSTAND THIS
+                           Utils::max<unsigned int>());
 
             hasParent = true;
         }
