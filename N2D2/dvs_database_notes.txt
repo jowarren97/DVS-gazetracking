@@ -1,0 +1,44 @@
+Database will consist of one or more aedat file(s).
+Format may be dvs128 or dvs240c
+
+
+---------------------------------------------------------------
+
+Existing code structure for AER data reading:
+- Environment set to 'AerMode' i.e. mReadAerData = True
+- Within main(), call:
+	- std::shared_ptr<Environment> env = std::dynamic_pointer_cast<Environment>(deepNet->getStimuliProvider())
+
+	- env->readAerStimulus(set, id)
+	- env->readAerStimulus(set, id, start, stop, reps, partialStim)
+	- env->readRandomAerStimulus(set, id)
+	- env->readRandomAerStimulus(set, id, start, stop, reps, partialStim)
+- These calls route to:
+	- AER_Database * aerDatabase = dynamic_cast<AER_Database*>(&mDatabase)
+	- mAerData.clear()
+
+	- aerDatabase->loadAerStimulusData(mAerData, set, id)
+	- aerDatabase->loadAerStimulusData(mAerData, set, id, start, stop, reps, partialStim)
+
+	- ABOVE FUNCTIONS ARE VIRTUAL i.e. MUST BE CONTAINED IN CLASS THAT INHERITS FROM AER_DATABASE
+	- This is done with N_MNIST_DATABASE
+	- Function must contain code that parses data and places in std::vector<N2D2::ReadAerEvent &AerData
+
+- Call env->propagate(start, stop) to release read events into network
+
+- N.B when using net.run (clock simulation), we use the readAerStim with start and stop times.
+
+---------------------------------------------------------------
+
+
+Requirements:
+
+mReadAer = true
+
+Wont be able to read entire aedat file into 'aerData' vector
+
+Will want two functionalites:
+1. Play through files chronologically
+2. Take random time slices from files (with replacement or without replacement?)
+
+Reading in data from the files req aer reader
