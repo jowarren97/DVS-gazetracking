@@ -274,10 +274,11 @@ cv::Mat N2D2::ConvCell_Spike::reconstructActivity(unsigned int output,
                                           itEnd = mOutputs.end();
          it != itEnd;
          ++it)
-        maxValue = std::max(maxValue, (*it)->getActivity(start, stop));
+        maxValue = std::max(maxValue, (*it)->getActivity(start, stop)); //loop through all output nodes, see which has max activity - used later for NORMALISATION
 
-    cv::Mat img(cv::Size(mOutputsDims[0], mOutputsDims[1]), CV_8UC1, 0.0);
+    cv::Mat img(cv::Size(mOutputsDims[0], mOutputsDims[1]), CV_8UC1, 0.0); //make matrix 2D grid with dim of outputs
 
+	//get activity of each output node, normalise
     if (maxValue > 0) {
         for (unsigned int y = 0; y < mOutputsDims[1]; ++y) {
             for (unsigned int x = 0; x < mOutputsDims[0]; ++x)
@@ -296,6 +297,7 @@ cv::Mat N2D2::ConvCell_Spike::reconstructActivity(unsigned int output,
     return img;
 }
 
+//outputs 2D image for each output channel (i.e. kernel) where each pixel (x,y) represents rel activity at x,y coord ***for that specific kernel***
 void N2D2::ConvCell_Spike::reconstructActivities(const std::string& dirName,
                                                  Time_T start,
                                                  Time_T stop,
