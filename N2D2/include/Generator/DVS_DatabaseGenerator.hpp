@@ -18,17 +18,17 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#ifndef N2D2_N_MNIST_DATABASEGENERATOR_H
-#define N2D2_N_MNIST_DATABASEGENERATOR_H
+#ifndef N2D2_DVS_DATABASEGENERATOR_H
+#define N2D2_DVS_DATABASEGENERATOR_H
 
-#include "Database/N_MNIST_Database.hpp"
+#include "Database/DVS_Database.hpp"
 #include "DatabaseGenerator.hpp"
 #include "N2D2.hpp"
 
 namespace N2D2 {
-class N_MNIST_DatabaseGenerator : public DatabaseGenerator {
+class DVS_DatabaseGenerator : public DatabaseGenerator {
 public:
-    static std::shared_ptr<N_MNIST_Database>
+    static std::shared_ptr<DVS_Database>
     generate(IniParser& iniConfig, const std::string& section);
 
 private:
@@ -36,4 +36,4 @@ private:
 };
 }
 
-#endif // N2D2_N_MNIST_DATABASEGENERATOR_H
+#endif // N2D2_DVS_DATABASEGENERATOR_H

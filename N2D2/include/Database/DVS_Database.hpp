@@ -19,8 +19,8 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#ifndef N2D2_N_MNIST_DATABASE_H
-#define N2D2_N_MNIST_DATABASE_H
+#ifndef N2D2_DVS_DATABASE_H
+#define N2D2_DVS_DATABASE_H
 
 #include "Database/AER_Database.hpp"
 
@@ -50,4 +50,4 @@ protected:
 };
 }
 
-#endif // N2D2_N_MNIST_DATABASE_H
+#endif // N2D2_DVS_DATABASE_H

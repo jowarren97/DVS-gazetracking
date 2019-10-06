@@ -18,14 +18,14 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "Generator/N_MNIST_DatabaseGenerator.hpp"
+#include "Generator/DVS_DatabaseGenerator.hpp"
 
 N2D2::Registrar<N2D2::DatabaseGenerator>
-N2D2::N_MNIST_DatabaseGenerator::mRegistrar(
-    "N_MNIST_Database", N2D2::N_MNIST_DatabaseGenerator::generate);
+N2D2::DVS_DatabaseGenerator::mRegistrar(
+    "DVS_Database", N2D2::DVS_DatabaseGenerator::generate);
 
-std::shared_ptr<N2D2::N_MNIST_Database>
-N2D2::N_MNIST_DatabaseGenerator::generate(IniParser& iniConfig,
+std::shared_ptr<N2D2::DVS_Database>
+N2D2::DVS_DatabaseGenerator::generate(IniParser& iniConfig,
                                             const std::string& section)
 {
     if (!iniConfig.currentSection(section))
@@ -33,10 +33,10 @@ N2D2::N_MNIST_DatabaseGenerator::generate(IniParser& iniConfig,
 
     const double validation = iniConfig.getProperty<double>("Validation", 0.0);
     const std::string dataPath = Utils::expandEnvVars(
-        iniConfig.getProperty<std::string>("DataPath", N2D2_DATA("N-MNIST")));
+        iniConfig.getProperty<std::string>("DataPath", N2D2_DATA("dvs")));
 
-    std::shared_ptr<N_MNIST_Database> database = std::make_shared
-        <N_MNIST_Database>(validation);
+    std::shared_ptr<DVS_Database> database = std::make_shared
+        <DVS_Database>(validation);
     database->setParameters(iniConfig.getSection(section, true));
     database->load(dataPath);
     return database;
