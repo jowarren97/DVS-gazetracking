@@ -19,10 +19,10 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "Database/N_MNIST_Database.hpp"
+#include "Database/DVS_Database.hpp"
 #include <bitset>
 
-N2D2::N_MNIST_Database::N_MNIST_Database(double validation)
+N2D2::DVS_Database::DVS_Database(double validation)
     : AER_Database(), mValidation(validation)
 
 {
@@ -31,7 +31,7 @@ N2D2::N_MNIST_Database::N_MNIST_Database(double validation)
 
 
 /// This loads the database and partitions it into learning and testing samples
-void N2D2::N_MNIST_Database::load(const std::string& dataPath,
+void N2D2::DVS_Database::load(const std::string& dataPath,
                                     const std::string& /*labelPath*/,
                                     bool /*extractROIs*/)
 {
@@ -88,7 +88,7 @@ void N2D2::N_MNIST_Database::load(const std::string& dataPath,
 
 
 
-void N2D2::N_MNIST_Database::loadAerStimulusData(
+void N2D2::DVS_Database::loadAerStimulusData(
                                             std::vector<AerReadEvent>& aerData,
                                             StimuliSet set,
                                             StimulusID id)
@@ -143,14 +143,14 @@ void N2D2::N_MNIST_Database::loadAerStimulusData(
             delete[] memblock;
     }
     else {
-        throw std::runtime_error("N_MNIST_Database::loadAerStimulusData: "
+        throw std::runtime_error("DVS_Database::loadAerStimulusData: "
                                     "Could not open AER file: " + filename);
     }
 }
 
 
 /// This is only used in clock-simulation
-void N2D2::N_MNIST_Database::loadAerStimulusData(
+void N2D2::DVS_Database::loadAerStimulusData(
                                                 std::vector<AerReadEvent>& aerData,
                                                 StimuliSet set,
                                                 StimulusID id,
@@ -210,7 +210,7 @@ void N2D2::N_MNIST_Database::loadAerStimulusData(
             delete[] memblock;
     }
     else {
-        throw std::runtime_error("N_MNIST_Database::loadAerStimulusData: "
+        throw std::runtime_error("DVS_Database::loadAerStimulusData: "
                                     "Could not open AER file: " + filename);
     }
 
@@ -221,7 +221,7 @@ void N2D2::N_MNIST_Database::loadAerStimulusData(
         std::cout << "start: " << start << std::endl;
         std::cout << "stop: " << stop << std::endl;
         std::cout << "repetitions: " << repetitions << std::endl;
-        throw std::runtime_error("N_MNIST_Database::loadAerStimulusData: "
+        throw std::runtime_error("DVS_Database::loadAerStimulusData: "
                                   " repetitions not multiple of stop-start");
     }
 
@@ -245,7 +245,7 @@ void N2D2::N_MNIST_Database::loadAerStimulusData(
         }
         else {
             std::cout << partialStimulus << std::endl;
-            throw std::runtime_error("N_MNIST_Database::loadAerStimulusData: "
+            throw std::runtime_error("DVS_Database::loadAerStimulusData: "
                                   " partialStimulus value invalid");
         }
         for(std::vector<AerReadEvent>::iterator it=stimu.begin();
