@@ -23,9 +23,10 @@
 #define N2D2_DVS_DATABASE_H
 
 #include "Database/AER_Database.hpp"
+#include "Database/DIR_Database.hpp"
 
 namespace N2D2 {
-class DVS_Database : public AER_Database {
+class DVS_Database : public AER_Database, public DIR_Database {
 public:
     DVS_Database(double validation = 0.0);
     virtual void load(const std::string& dataPath,

@@ -40,7 +40,7 @@ struct AerReadEvent {
 };
 
 
-class AER_Database : public Database {
+class AER_Database : public virtual Database {
 public:
 
     AER_Database(bool loadDataInMemory=true);

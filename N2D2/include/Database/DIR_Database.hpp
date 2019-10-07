@@ -24,7 +24,7 @@
 #include "Database/Database.hpp"
 
 namespace N2D2 {
-class DIR_Database : public Database {
+class DIR_Database : public virtual Database {
 public:
     DIR_Database(bool loadDataInMemory = false);
     void setIgnoreMasks(const std::vector<std::string>& ignoreMasks);
