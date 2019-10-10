@@ -28,7 +28,7 @@
 namespace N2D2 {
 class DVS_Database : public AER_Database, public DIR_Database {
 public:
-    DVS_Database(double validation = 0.0);
+    DVS_Database(double validation = 0.0, bool loadDataInMemory = true);
     virtual void load(const std::string& dataPath,
                       const std::string& labelPath = "",
                       bool /*extractROIs*/ = false);

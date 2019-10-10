@@ -20,16 +20,16 @@
 */
 
 #include "Database/DVS_Database.hpp"
+#include "Database/DIR_Database.hpp"
 #include <bitset>
-#include <filesystem>
 
-namespace fs = std::experimental::filesystem;
 
-N2D2::DVS_Database::DVS_Database(double validation)
-    : AER_Database(), mValidation(validation)
+N2D2::DVS_Database::DVS_Database(double validation, bool loadDataInMemory)
+    : AER_Database(loadDataInMemory), DIR_Database(loadDataInMemory), mValidation(validation)
 
 {
     // ctor
+    mValidExtensions.push_back("aedat");
 }
 
 /// This loads the database and partitions it into learning and testing samples
@@ -39,13 +39,9 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
 {
     std::ostringstream nameStr;
 
-    for (const auto& entry : fs::directory_iterator(dataPath)) {
-        std::cout << entry.path() << std::endl;
-    }
-
     // Need code for leave one out
 
-    partitionStimuli(1.0 - mValidation, mValidation, 0.0)
+    partitionStimuli(1.0 - mValidation, mValidation, 0.0);
     /*
     unsigned int nbClasses = 10;
     unsigned int nbTrainImages = 60000;
