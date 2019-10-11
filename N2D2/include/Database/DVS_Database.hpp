@@ -28,7 +28,7 @@
 namespace N2D2 {
 class DVS_Database : public AER_Database, public DIR_Database {
 public:
-    DVS_Database(double validation = 0.0, bool loadDataInMemory = true);
+    DVS_Database(double validation = 0.0, Time_T segmentSize = 1000U, bool loadDataInMemory = true);
     virtual void load(const std::string& dataPath,
                       const std::string& labelPath = "",
                       bool /*extractROIs*/ = false);
@@ -44,10 +44,15 @@ public:
                                                     Time_T stop,
                                                     unsigned int repetitions=1,
                                                     unsigned int partialStimulus=0);
+    virtual void loadDir(const std::string& dirPath,
+									int depth = 0,
+									const std::string& labelName = "",
+									int labelDepth = 0);
     virtual ~DVS_Database() {};
 
 protected:
     double mValidation;
+	Time_T mSegmentSize;
 };
 }
 

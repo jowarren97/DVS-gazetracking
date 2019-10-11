@@ -21,12 +21,17 @@
 
 #include "Database/DVS_Database.hpp"
 #include "Database/DIR_Database.hpp"
+#include "DataFile/DataFile.hpp"
+#include "utils/Registrar.hpp"
 #include <bitset>
 
 
-N2D2::DVS_Database::DVS_Database(double validation, bool loadDataInMemory)
-    : AER_Database(loadDataInMemory), DIR_Database(loadDataInMemory), mValidation(validation)
-
+N2D2::DVS_Database::DVS_Database(double validation, Time_T segmentSize, bool loadDataInMemory)
+    : AER_Database(loadDataInMemory), 
+	  DIR_Database(loadDataInMemory),
+	  Database(loadDataInMemory), 
+	  mValidation(validation), 
+	  mSegmentSize(segmentSize)
 {
     // ctor
     mValidExtensions.push_back("aedat");
@@ -37,7 +42,7 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
     const std::string& /*labelPath*/,
     bool /*extractROIs*/)
 {
-    std::ostringstream nameStr;
+    loadDir(dataPath, 0, "", -1); //loads all files into mStimuli, with name as filename as label -1 (unlabelled)
 
     // Need code for leave one out
 
@@ -165,6 +170,9 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     std::string filename = mStimuli[mStimuliSets(set)[id]].name;
     // std::cout << filename << std::endl;
 
+	// static std::map<std::string, std::pair<Time_T, std::streampos> > history;
+
+
     std::vector<AerReadEvent> stimu;
 
     std::ifstream data(filename,
@@ -279,4 +287,115 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
                 AerReadEvent((*it).x, (*it).y, (*it).channel, scaledTime));
         }
     }
+}
+
+
+void N2D2::DVS_Database::loadDir(const std::string& dirPath,
+    int depth,
+    const std::string& labelName,
+    int labelDepth)
+{
+    std::cout << "ENTERRED DVS_DATABASE::LOADDIR!" << std::endl;
+    if (!((std::string)mDefaultLabel).empty())
+        labelID(mDefaultLabel);
+
+    DIR* pDir = opendir(dirPath.c_str());
+
+    if (pDir == NULL)
+        throw std::runtime_error(
+            "Couldn't open database directory: " + dirPath);
+
+    struct dirent* pFile;
+    struct stat fileStat;
+    std::vector<std::string> subDirs;
+    std::vector<std::string> files;
+
+    std::cout << "Loading directory database \"" << dirPath << "\""
+              << std::endl;
+
+    while ((pFile = readdir(pDir))) {
+        const std::string fileName(pFile->d_name);
+        const std::string filePath(dirPath + "/" + fileName);
+
+        // Ignore file in case of stat failure
+        if (stat(filePath.c_str(), &fileStat) < 0)
+            continue;
+        // Exclude current and parent directories
+        if (!strcmp(pFile->d_name, ".") || !strcmp(pFile->d_name, ".."))
+            continue;
+
+        bool masked = false;
+
+        for (std::vector<std::string>::const_iterator it = mIgnoreMasks.begin(),
+                                                      itEnd
+             = mIgnoreMasks.end();
+             it != itEnd; ++it) {
+            if (Utils::match((*it), filePath)) {
+                std::cout << Utils::cnotice << "Notice: path \"" << filePath
+                          << "\" ignored (matching mask: " << (*it) << ")."
+                          << Utils::cdef << std::endl;
+                masked = true;
+            }
+        }
+
+        if (masked)
+            continue;
+
+        if (S_ISDIR(fileStat.st_mode))
+            subDirs.push_back(filePath);
+        else {
+            // Exclude files with wrong extension
+            std::string fileExtension = Utils::fileExtension(fileName);
+            std::transform(fileExtension.begin(), fileExtension.end(),
+                fileExtension.begin(), ::tolower);
+
+            if (mValidExtensions.empty()
+                || std::find(mValidExtensions.begin(), mValidExtensions.end(),
+                       fileExtension)
+                    != mValidExtensions.end()) {
+                if (!Registrar<DataFile>::exists(fileExtension)) {
+                    std::cout << Utils::cnotice << "Notice: file " << fileName
+                              << " does not appear to be a valid stimulus,"
+                                 " ignoring."
+                              << Utils::cdef << std::endl;
+                    continue;
+                }
+
+                files.push_back(filePath);
+            }
+        }
+    }
+
+    closedir(pDir);
+
+    if (!files.empty()) {
+        // Load stimuli contained in this directory
+        std::sort(files.begin(), files.end());
+
+        const int dirLabelID = (labelDepth >= 0) ? labelID(labelName) : -1;
+
+        for (std::vector<std::string>::const_iterator it = files.begin(),
+                                                      itEnd = files.end();
+             it != itEnd; ++it) {
+            mStimuli.push_back(Stimulus(*it, dirLabelID));
+            mStimuliSets(Unpartitioned).push_back(mStimuli.size() - 1);
+        }
+    }
+
+    if (depth != 0) {
+        // Recursively load stimuli contained in the subdirectories
+        std::sort(subDirs.begin(), subDirs.end());
+
+        for (std::vector<std::string>::const_iterator it = subDirs.begin(),
+                                                      itEnd = subDirs.end();
+             it != itEnd; ++it) {
+            if (labelDepth > 0)
+                loadDir(*it, depth - 1, labelName + "/" + Utils::baseName(*it),
+                    labelDepth - 1);
+            else
+                loadDir(*it, depth - 1, labelName, labelDepth);
+        }
+    }
+
+    std::cout << "Found " << mStimuli.size() << " stimuli" << std::endl;
 }
