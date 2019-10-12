@@ -22,43 +22,50 @@
 #include "AerEvent.hpp"
 
 N2D2::AerEvent::AerEvent(double version)
-    : time(0),
-      addr(0),
-      map(0),
-      channel(0),
-      node(0),
-      mVersion(version),
-      mRawTimeNeg(false),
-      mRawTimeOffset(0)
+    : time(0)
+    , addr(0)
+    , map(0)
+    , channel(0)
+    , node(0)
+    , mVersion(version)
+    , mRawTimeNeg(false)
+    , mRawTimeOffset(0)
 {
     // ctor
 }
 
 std::ifstream& N2D2::AerEvent::read(std::ifstream& data)
 {
-    return ((int)mVersion == 2)
-               ? read<unsigned int, int>(data)
-               : ((int)mVersion == 3) ? read
-                     <unsigned int, unsigned long long int>(data)
-                                      : read<unsigned short, int>(data);
+    // DEBUG - working
+    // std::cout << "Version: " << mVersion << std::endl;
+    //
+    /*
+return ((int)mVersion == 2)
+           ? read<unsigned int, int>(data)
+           : ((int)mVersion == 3) ? read
+                 <unsigned int, unsigned long long int>(data)
+                                  : read<unsigned short, int>(data);
+    */
+    return ((int)mVersion == 2) ? read<unsigned int, int>(data)
+                                : ((int)mVersion == 3)
+            ? read<unsigned int, unsigned long long int>(data)
+            : read<unsigned short, int>(data);
 }
 
 std::ofstream& N2D2::AerEvent::write(std::ofstream& data) const
 {
-    return ((int)mVersion == 2)
-               ? write<unsigned int, int>(data)
-               : ((int)mVersion == 3) ? write
-                     <unsigned int, unsigned long long int>(data)
-                                      : write<unsigned short, int>(data);
+    return ((int)mVersion == 2) ? write<unsigned int, int>(data)
+                                : ((int)mVersion == 3)
+            ? write<unsigned int, unsigned long long int>(data)
+            : write<unsigned short, int>(data);
 }
 
 int N2D2::AerEvent::size() const
 {
-    return ((int)mVersion == 2)
-               ? (sizeof(unsigned int) + sizeof(int))
-               : ((int)mVersion == 3)
-                     ? (sizeof(unsigned int) + sizeof(unsigned long long int))
-                     : (sizeof(unsigned short) + sizeof(int));
+    return ((int)mVersion == 2) ? (sizeof(unsigned int) + sizeof(int))
+                                : ((int)mVersion == 3)
+            ? (sizeof(unsigned int) + sizeof(unsigned long long int))
+            : (sizeof(unsigned short) + sizeof(int));
 }
 
 void N2D2::AerEvent::maps(AerFormat format)
@@ -67,11 +74,20 @@ void N2D2::AerEvent::maps(AerFormat format)
         map = addr >> 28;
         channel = (addr >> 24) & 0xF;
         node = addr & 0xFFFFFF;
-    } else if (format == Dvs128) {
+    }
+    else if (format == Dvs128) {
         map = 0;
         channel = addr & 1;
         node = 128 * 128 - (addr >> 1) - 1;
-    } else
+    }
+    // EDITED BY ME
+    else if (format == Dvs240c) {
+        map = 0;
+        channel = addr & 1;
+        node = 240 * 180 - (addr >> 1) - 1;
+        //
+    }
+    else
         throw std::runtime_error("Unknown AER format");
 }
 
@@ -84,13 +100,20 @@ void N2D2::AerEvent::unmaps(AerFormat format)
             throw std::domain_error("AerEvent::unmaps(): out of range");
 
         addr = ((128 * 128 - node - 1) << 1) | channel;
-    } else
+    }
+    // EDITED BY ME
+    else if (format == Dvs240c) {
+        if (channel > 1)
+            throw std::domain_error("AerEvent::unmaps(): out of range");
+
+        addr = ((240 * 180 - node - 1) << 1) | channel;
+    }
+    else
         throw std::runtime_error("Unknown AER format");
 }
 
-unsigned int N2D2::AerEvent::unmaps(unsigned int map,
-                                    unsigned int channel,
-                                    unsigned int node)
+unsigned int N2D2::AerEvent::unmaps(
+    unsigned int map, unsigned int channel, unsigned int node)
 {
     if (map > 0xF || channel > 0xF || node > 0xFFFFFF)
         throw std::domain_error("AerEvent::unmaps(): out of range");

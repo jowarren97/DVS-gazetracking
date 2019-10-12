@@ -28,16 +28,19 @@
 #include "Network.hpp"
 #include "utils/Utils.hpp"
 
+#include <bitset>
+
 namespace N2D2 {
 /**
  * This class is a wrapper for reading and writing AER files, used internally by
  * Environment::readAer(), Environment::saveAer()
  * and Environment::aerViewer().
-*/
+ */
 struct AerEvent {
     enum AerFormat {
         N2D2Env,
-        Dvs128
+        Dvs128,
+        Dvs240c // EDITED BY ME
     };
 
     AerEvent(double version = 3.0);
@@ -46,8 +49,8 @@ struct AerEvent {
     int size() const;
     void maps(AerFormat format = N2D2Env);
     void unmaps(AerFormat format = N2D2Env);
-    static unsigned int
-    unmaps(unsigned int map, unsigned int channel, unsigned int node);
+    static unsigned int unmaps(
+        unsigned int map, unsigned int channel, unsigned int node);
 
     Time_T time;
     unsigned int addr;
@@ -109,7 +112,43 @@ N2D2::AerEvent::read(std::ifstream& data)
         Utils::swapEndian(rawTime);
     }
 
-    addr = static_cast<unsigned int>(rawAddr);
+    if ((int)mVersion == 2) {
+        unsigned int addr_temp = static_cast<unsigned int>(rawAddr);
+
+        // unsigned  mask = (1 << 18) - 12;
+        // unsigned int mask = 0x0000FFFF;
+        // unsigned result = addr & mask;
+        if (((addr_temp & (1 << (31))) >> 31) == 1) {
+            std::cout << "frame event found" << std::endl;
+        }
+
+        unsigned xaddr = (((1 << 10) - 1) & (addr_temp >> (12)));
+        unsigned yaddr = (((1 << 9) - 1) & (addr_temp >> (22)));
+
+        // DEBUG - works
+        // std::cout << std::bitset<32>(addr_temp) << std::endl;
+        // std::cout << std::bitset<32>(xaddr) << std::endl;
+        // std::cout << std::bitset<32>(yaddr) << std::endl;
+        // std::cout << "x address: " << xaddr << std::endl;
+        // std::cout << "y address: " << yaddr << std::endl;
+
+        addr = xaddr + yaddr * 240;
+        // std::cout << "Full Address: " << std::bitset<32>(addr_temp) <<
+        // std::endl; std::cout << "Parsed Address: " << std::bitset<32>(addr) <<
+        // std::endl;
+
+        channel = (addr_temp & (1 << 11)) >> 11;
+        // std::cout << "Channel: " << std::bitset<32>(channel) << std::endl;
+
+        addr = (addr << 1) + channel; // WORKING FOR AEDAT2.0
+        // std::cout << "Address: " << addr << std::endl;
+        // std::cout << "New Address: " << std::bitset<32>(addr) << std::endl;
+        // std::getchar();
+    }
+
+    else {
+        addr = static_cast<unsigned int>(rawAddr);
+    }
 
     // Check & correct for overflow
     // (required for "Tmpdiff128-2007-02-28T15-08-15-0800-0 3 flies 2m 1f.dat"
@@ -120,7 +159,8 @@ N2D2::AerEvent::read(std::ifstream& data)
         //          << mRawTimeOffset << " us)" << std::endl;
         mRawTimeOffset += (1ULL << 8 * sizeof(rawTime));
         mRawTimeNeg = true;
-    } else if (rawTime >= 0 && mRawTimeNeg)
+    }
+    else if (rawTime >= 0 && mRawTimeNeg)
         mRawTimeNeg = false;
 
     time = (mRawTimeOffset + rawTime) * TimeUs;
