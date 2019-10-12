@@ -29,7 +29,13 @@
 namespace N2D2 {
 class DVS_Database : public AER_Database, public DIR_Database {
 public:
-    DVS_Database(double validation = 0.0, Time_T segmentSize = 1000U, bool loadDataInMemory = true);
+    enum AerFormat {
+		N2D2Env,
+        Dvs128,
+        Dvs240c // EDITED BY ME
+    };
+
+    DVS_Database(double validation = 0.0, Time_T segmentSize = 1000U, bool loadDataInMemory = true, AerFormat version = Dvs240c);
     virtual void load(const std::string& dataPath,
                       const std::string& labelPath = "",
                       bool /*extractROIs*/ = false);
@@ -58,6 +64,7 @@ protected:
     double mValidation;
 	Time_T mSegmentSize;
     Time_T mSegmentStepSize;
+    AerFormat mVersion;
     std::unordered_map<StimulusID, std::pair<Time_T, std::streampos>> mStartPositions; //contains stimulus ID and corresponding timestamp starm & stream position
 };
 }

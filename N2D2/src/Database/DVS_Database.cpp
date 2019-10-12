@@ -25,13 +25,13 @@
 #include "utils/Registrar.hpp"
 #include <bitset>
 
-N2D2::DVS_Database::DVS_Database(
-    double validation, Time_T segmentSize, bool loadDataInMemory)
+N2D2::DVS_Database::DVS_Database(double validation, Time_T segmentSize, bool loadDataInMemory, AerFormat version)
     : AER_Database(loadDataInMemory)
     , DIR_Database(loadDataInMemory)
     , Database(loadDataInMemory)
     , mValidation(validation)
     , mSegmentSize(segmentSize)
+    , mVersion(version)
 {
     // ctor
     mValidExtensions.push_back("aedat");
@@ -68,7 +68,7 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
             }
         }
     }
-    
+    
     // Assign loaded stimuli to learning and validation set
     partitionStimuli(1.0 - mValidation, mValidation, 0.0);
 
@@ -417,14 +417,15 @@ void N2D2::DVS_Database::segmentFile(const std::string&
     std::ifstream data(fileName.c_str(), std::fstream::binary);
     if (!data.good())
         throw std::runtime_error("Could not open AER file: " + fileName);
+    if (readVersion(data) != mVersion)
+        throw std::runtime_error(fileName + " is of inconsistent DVS format");
 
     std::pair<Time_T, Time_T> times = getTimes(fileName);
     Time_T startTime = times.first;
     Time_T endTime = times.second;
-
     unsigned int nbSegments = (endTime - mSegmentSize) % mSegmentStepSize;
 
-    AerEvent event(readVersion(data)); // NEED TO PUT DVS240C FORMAT IN AEREVENT
+    AerEvent event(mVersion);
     unsigned int nbEvents = 0;
     Time_T lastSegmentStart = startTime;
     unsigned int segmentCounter = 0;
