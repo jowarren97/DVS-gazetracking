@@ -307,15 +307,15 @@ void N2D2::DVS_Database::segmentFile(std::string&
     Time_T startTime = times.first;
     Time_T endTime = times.second;
 
-    unsigned int nbBins = 10; // CHANGE
+    unsigned int nbSegments = (endTime - mSegmentSize) % mSegmentStepSize;
 
-    AerEvent event(readVersion(data));
+    AerEvent event(readVersion(data)); //NEED TO PUT DVS240C FORMAT IN AEREVENT
     unsigned int nbEvents = 0;
     Time_T lastSegmentStart = startTime;
     unsigned int segmentCounter = 0;
 	Time_T lastTime = startTime;
 
-    while (event.read(data).good()) {
+    while ((event.read(data).good()) && (segmentCounter < nbSegments)) {
         // Tolerate a lag of 100ms because real AER retina captures are not
         // always non-monotonic
         if (event.time > startTime + segmentCounter * mSegmentStepSize) { // add robustness to end of file;
