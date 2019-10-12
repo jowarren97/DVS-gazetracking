@@ -34,6 +34,10 @@ public:
                       const std::string& labelPath = "",
                       bool /*extractROIs*/ = false);
     //virtual cv::Mat getStimulusData(StimulusID id);
+    virtual void loadDir(const std::string& dirPath,
+        int depth = 0,
+        const std::string& labelName = "",
+        int labelDepth = 0);
     virtual void loadAerStimulusData(std::vector<AerReadEvent>& aerData,
                                                 StimuliSet set,
                                                 StimulusID id);
@@ -45,7 +49,7 @@ public:
                                                     Time_T stop,
                                                     unsigned int repetitions=1,
                                                     unsigned int partialStimulus=0);
-    void segmentFile(std::string& fileName);
+    void segmentFile(const std::string& fileName);
     std::pair<Time_T, Time_T> getTimes(const std::string& fileName) const;
     double readVersion(std::ifstream& data) const;
     virtual ~DVS_Database() {};

@@ -68,7 +68,7 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
             }
         }
     }
-    
+    
     // Assign loaded stimuli to learning and validation set
     partitionStimuli(1.0 - mValidation, mValidation, 0.0);
 
@@ -100,6 +100,121 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
     // Assign loaded stimuli to test set
     partitionStimuli(0.0, 0.0, 1.0);
         */
+}
+
+void N2D2::DVS_Database::loadDir(const std::string& dirPath,
+    int depth,
+    const std::string& labelName,
+    int labelDepth)
+{
+
+    {
+        if (!((std::string)mDefaultLabel).empty())
+            labelID(mDefaultLabel);
+
+        DIR* pDir = opendir(dirPath.c_str());
+
+        if (pDir == NULL)
+            throw std::runtime_error(
+                "Couldn't open database directory: " + dirPath);
+
+        struct dirent* pFile;
+        struct stat fileStat;
+        std::vector<std::string> subDirs;
+        std::vector<std::string> files;
+
+        std::cout << "Loading directory database \"" << dirPath << "\""
+                  << std::endl;
+
+        while ((pFile = readdir(pDir))) {
+            const std::string fileName(pFile->d_name);
+            const std::string filePath(dirPath + "/" + fileName);
+
+            // Ignore file in case of stat failure
+            if (stat(filePath.c_str(), &fileStat) < 0)
+                continue;
+            // Exclude current and parent directories
+            if (!strcmp(pFile->d_name, ".") || !strcmp(pFile->d_name, ".."))
+                continue;
+
+            bool masked = false;
+
+            for (std::vector<std::string>::const_iterator it
+                 = mIgnoreMasks.begin(),
+                 itEnd = mIgnoreMasks.end();
+                 it != itEnd; ++it) {
+                if (Utils::match((*it), filePath)) {
+                    std::cout << Utils::cnotice << "Notice: path \"" << filePath
+                              << "\" ignored (matching mask: " << (*it) << ")."
+                              << Utils::cdef << std::endl;
+                    masked = true;
+                }
+            }
+
+            if (masked)
+                continue;
+
+            if (S_ISDIR(fileStat.st_mode))
+                subDirs.push_back(filePath);
+            else {
+                // Exclude files with wrong extension
+                std::string fileExtension = Utils::fileExtension(fileName);
+                std::transform(fileExtension.begin(), fileExtension.end(),
+                    fileExtension.begin(), ::tolower);
+
+                if (mValidExtensions.empty()
+                    || std::find(mValidExtensions.begin(),
+                           mValidExtensions.end(), fileExtension)
+                        != mValidExtensions.end()) {
+                    if (!Registrar<DataFile>::exists(fileExtension)) {
+                        std::cout << Utils::cnotice << "Notice: file "
+                                  << fileName
+                                  << " does not appear to be a valid stimulus,"
+                                     " ignoring."
+                                  << Utils::cdef << std::endl;
+                        continue;
+                    }
+
+                    files.push_back(filePath);
+                }
+            }
+        }
+
+        closedir(pDir);
+
+        if (!files.empty()) {
+            // Load stimuli contained in this directory
+            std::sort(files.begin(), files.end());
+
+            const int dirLabelID = (labelDepth >= 0) ? labelID(labelName) : -1;
+
+            for (std::vector<std::string>::const_iterator it = files.begin(),
+                                                          itEnd = files.end();
+                 it != itEnd; ++it) {
+                // mStimuli.push_back(Stimulus(*it, dirLabelID));
+                // mStimuliSets(Unpartitioned).push_back(mStimuli.size() - 1);
+
+                segmentFile(*it);
+            }
+        }
+
+        if (depth != 0) {
+            // Recursively load stimuli contained in the subdirectories
+            std::sort(subDirs.begin(), subDirs.end());
+
+            for (std::vector<std::string>::const_iterator it = subDirs.begin(),
+                                                          itEnd = subDirs.end();
+                 it != itEnd; ++it) {
+                if (labelDepth > 0)
+                    loadDir(*it, depth - 1,
+                        labelName + "/" + Utils::baseName(*it), labelDepth - 1);
+                else
+                    loadDir(*it, depth - 1, labelName, labelDepth);
+            }
+        }
+
+        std::cout << "Found " << mStimuli.size() << " stimuli" << std::endl;
+    }
 }
 
 void N2D2::DVS_Database::loadAerStimulusData(
@@ -295,7 +410,7 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     }*/
 }
 
-void N2D2::DVS_Database::segmentFile(std::string&
+void N2D2::DVS_Database::segmentFile(const std::string&
         fileName) // maybe implement start/end clipping for each file (I.e.
                   // separate file stored indicating desired start + end)
 {
@@ -309,25 +424,29 @@ void N2D2::DVS_Database::segmentFile(std::string&
 
     unsigned int nbSegments = (endTime - mSegmentSize) % mSegmentStepSize;
 
-    AerEvent event(readVersion(data)); //NEED TO PUT DVS240C FORMAT IN AEREVENT
+    AerEvent event(readVersion(data)); // NEED TO PUT DVS240C FORMAT IN AEREVENT
     unsigned int nbEvents = 0;
     Time_T lastSegmentStart = startTime;
     unsigned int segmentCounter = 0;
-	Time_T lastTime = startTime;
+    Time_T lastTime = startTime;
 
     while ((event.read(data).good()) && (segmentCounter < nbSegments)) {
         // Tolerate a lag of 100ms because real AER retina captures are not
         // always non-monotonic
-        if (event.time > startTime + segmentCounter * mSegmentStepSize) { // add robustness to end of file;
-  			//if event time is after segment start, assign new stimuli & record stream position (-1 event as just read one)
-			mStimuli.push_back(Stimulus(fileName.c_str())); // change filename, maybe add _1, _2 etc.
+        if (event.time > startTime
+                + segmentCounter
+                    * mSegmentStepSize) { // add robustness to end of file;
+            // if event time is after segment start, assign new stimuli & record
+            // stream position (-1 event as just read one)
+            mStimuli.push_back(Stimulus(
+                fileName.c_str())); // change filename, maybe add _1, _2 etc.
 
             StimulusID id = mStimuli.size() - 1;
             mStimuliSets(Unpartitioned).push_back(id);
-            mStartPositions[id]
-                = std::make_pair(lastSegmentStart, (std::streamoff)data.tellg() - event.size());
+            mStartPositions[id] = std::make_pair(
+                lastSegmentStart, (std::streamoff)data.tellg() - event.size());
 
-			++segmentCounter;
+            ++segmentCounter;
         }
 
         if (event.time + 100 * TimeMs >= lastTime) {
@@ -345,7 +464,7 @@ void N2D2::DVS_Database::segmentFile(std::string&
         }
     }
 
-	std::cout << "Total number of events in file was " << nbEvents << std::endl;
+    std::cout << "Total number of events in file was " << nbEvents << std::endl;
 }
 
 std::pair<N2D2::Time_T, N2D2::Time_T> N2D2::DVS_Database::getTimes(
