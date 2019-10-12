@@ -24,6 +24,7 @@
 
 #include "Database/AER_Database.hpp"
 #include "Database/DIR_Database.hpp"
+#include "AerEvent.hpp"
 
 namespace N2D2 {
 class DVS_Database : public AER_Database, public DIR_Database {
@@ -44,15 +45,16 @@ public:
                                                     Time_T stop,
                                                     unsigned int repetitions=1,
                                                     unsigned int partialStimulus=0);
-    virtual void loadDir(const std::string& dirPath,
-									int depth = 0,
-									const std::string& labelName = "",
-									int labelDepth = 0);
+    void segmentFile(std::string& fileName);
+    std::pair<Time_T, Time_T> getTimes(const std::string& fileName) const;
+    double readVersion(std::ifstream& data) const;
     virtual ~DVS_Database() {};
 
 protected:
     double mValidation;
 	Time_T mSegmentSize;
+    Time_T mSegmentStepSize;
+    std::unordered_map<StimulusID, std::pair<Time_T, std::streampos>> mStartPositions; //contains stimulus ID and corresponding timestamp starm & stream position
 };
 }
 

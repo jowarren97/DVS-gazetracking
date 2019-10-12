@@ -20,18 +20,18 @@
 */
 
 #include "Database/DVS_Database.hpp"
-#include "Database/DIR_Database.hpp"
 #include "DataFile/DataFile.hpp"
+#include "Database/DIR_Database.hpp"
 #include "utils/Registrar.hpp"
 #include <bitset>
 
-
-N2D2::DVS_Database::DVS_Database(double validation, Time_T segmentSize, bool loadDataInMemory)
-    : AER_Database(loadDataInMemory), 
-	  DIR_Database(loadDataInMemory),
-	  Database(loadDataInMemory), 
-	  mValidation(validation), 
-	  mSegmentSize(segmentSize)
+N2D2::DVS_Database::DVS_Database(
+    double validation, Time_T segmentSize, bool loadDataInMemory)
+    : AER_Database(loadDataInMemory)
+    , DIR_Database(loadDataInMemory)
+    , Database(loadDataInMemory)
+    , mValidation(validation)
+    , mSegmentSize(segmentSize)
 {
     // ctor
     mValidExtensions.push_back("aedat");
@@ -42,7 +42,8 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
     const std::string& /*labelPath*/,
     bool /*extractROIs*/)
 {
-    loadDir(dataPath, 0, "", -1); //loads all files into mStimuli, with name as filename as label -1 (unlabelled)
+    loadDir(dataPath, 0, "", -1); // loads all files into mStimuli, with name as
+                                  // filename as label -1 (unlabelled)
 
     // Need code for leave one out
 
@@ -67,7 +68,7 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
             }
         }
     }
-    
+    
     // Assign loaded stimuli to learning and validation set
     partitionStimuli(1.0 - mValidation, mValidation, 0.0);
 
@@ -165,13 +166,18 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     Time_T stop,
     unsigned int repetitions,
     unsigned int partialStimulus)
-{
-
+{ /*
     std::string filename = mStimuli[mStimuliSets(set)[id]].name;
     // std::cout << filename << std::endl;
+    std::ifstream data(filename, std::fstream::binary);
+    if (!data.good())
+        throw std::runtime_error("Could not open AER file: " + filename);
 
-	// static std::map<std::string, std::pair<Time_T, std::streampos> > history;
-
+    if (mStartPositions.find(id)
+        != mStartPositions.end()) //&& start == history[fileName].first)
+        // Start from last position
+        data.seekg(mStartPositions[id]
+                       .second); // find starting position to read file from
 
     std::vector<AerReadEvent> stimu;
 
@@ -286,116 +292,96 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
             aerData.push_back(
                 AerReadEvent((*it).x, (*it).y, (*it).channel, scaledTime));
         }
-    }
+    }*/
 }
 
-
-void N2D2::DVS_Database::loadDir(const std::string& dirPath,
-    int depth,
-    const std::string& labelName,
-    int labelDepth)
+void N2D2::DVS_Database::segmentFile(std::string&
+        fileName) // maybe implement start/end clipping for each file (I.e.
+                  // separate file stored indicating desired start + end)
 {
-    std::cout << "ENTERRED DVS_DATABASE::LOADDIR!" << std::endl;
-    if (!((std::string)mDefaultLabel).empty())
-        labelID(mDefaultLabel);
+    std::ifstream data(fileName.c_str(), std::fstream::binary);
+    if (!data.good())
+        throw std::runtime_error("Could not open AER file: " + fileName);
 
-    DIR* pDir = opendir(dirPath.c_str());
+    std::pair<Time_T, Time_T> times = getTimes(fileName);
+    Time_T startTime = times.first;
+    Time_T endTime = times.second;
 
-    if (pDir == NULL)
-        throw std::runtime_error(
-            "Couldn't open database directory: " + dirPath);
+    unsigned int nbBins = 10; // CHANGE
 
-    struct dirent* pFile;
-    struct stat fileStat;
-    std::vector<std::string> subDirs;
-    std::vector<std::string> files;
+    AerEvent event(readVersion(data));
+    unsigned int nbEvents = 0;
+    Time_T lastSegmentStart = startTime;
+    unsigned int segmentCounter = 0;
+	Time_T lastTime = startTime;
 
-    std::cout << "Loading directory database \"" << dirPath << "\""
-              << std::endl;
+    while (event.read(data).good()) {
+        // Tolerate a lag of 100ms because real AER retina captures are not
+        // always non-monotonic
+        if (event.time > startTime + segmentCounter * mSegmentStepSize) { // add robustness to end of file;
+  			//if event time is after segment start, assign new stimuli & record stream position (-1 event as just read one)
+			mStimuli.push_back(Stimulus(fileName.c_str())); // change filename, maybe add _1, _2 etc.
 
-    while ((pFile = readdir(pDir))) {
-        const std::string fileName(pFile->d_name);
-        const std::string filePath(dirPath + "/" + fileName);
+            StimulusID id = mStimuli.size() - 1;
+            mStimuliSets(Unpartitioned).push_back(id);
+            mStartPositions[id]
+                = std::make_pair(lastSegmentStart, (std::streamoff)data.tellg() - event.size());
 
-        // Ignore file in case of stat failure
-        if (stat(filePath.c_str(), &fileStat) < 0)
-            continue;
-        // Exclude current and parent directories
-        if (!strcmp(pFile->d_name, ".") || !strcmp(pFile->d_name, ".."))
-            continue;
-
-        bool masked = false;
-
-        for (std::vector<std::string>::const_iterator it = mIgnoreMasks.begin(),
-                                                      itEnd
-             = mIgnoreMasks.end();
-             it != itEnd; ++it) {
-            if (Utils::match((*it), filePath)) {
-                std::cout << Utils::cnotice << "Notice: path \"" << filePath
-                          << "\" ignored (matching mask: " << (*it) << ")."
-                          << Utils::cdef << std::endl;
-                masked = true;
-            }
+			++segmentCounter;
         }
 
-        if (masked)
-            continue;
-
-        if (S_ISDIR(fileStat.st_mode))
-            subDirs.push_back(filePath);
-        else {
-            // Exclude files with wrong extension
-            std::string fileExtension = Utils::fileExtension(fileName);
-            std::transform(fileExtension.begin(), fileExtension.end(),
-                fileExtension.begin(), ::tolower);
-
-            if (mValidExtensions.empty()
-                || std::find(mValidExtensions.begin(), mValidExtensions.end(),
-                       fileExtension)
-                    != mValidExtensions.end()) {
-                if (!Registrar<DataFile>::exists(fileExtension)) {
-                    std::cout << Utils::cnotice << "Notice: file " << fileName
-                              << " does not appear to be a valid stimulus,"
-                                 " ignoring."
-                              << Utils::cdef << std::endl;
-                    continue;
-                }
-
-                files.push_back(filePath);
-            }
+        if (event.time + 100 * TimeMs >= lastTime) {
+            // Take the MAX because event.time can be non-monotonic because
+            // of AER lag or added jitter
+            lastTime = std::max(event.time, lastTime);
+            ++nbEvents;
+        }
+        else if (nbEvents > 0) {
+            std::cout << "Current event time is " << event.time / TimeUs
+                      << " us, last event time was " << lastTime / TimeUs
+                      << " us" << std::endl;
+            throw std::runtime_error(
+                "Non-monotonic AER data in file: " + fileName);
         }
     }
 
-    closedir(pDir);
+	std::cout << "Total number of events in file was " << nbEvents << std::endl;
+}
 
-    if (!files.empty()) {
-        // Load stimuli contained in this directory
-        std::sort(files.begin(), files.end());
+std::pair<N2D2::Time_T, N2D2::Time_T> N2D2::DVS_Database::getTimes(
+    const std::string& fileName) const
+{
+    std::ifstream data(fileName.c_str(), std::fstream::binary);
 
-        const int dirLabelID = (labelDepth >= 0) ? labelID(labelName) : -1;
+    if (!data.good())
+        throw std::runtime_error("Could not open AER file: " + fileName);
 
-        for (std::vector<std::string>::const_iterator it = files.begin(),
-                                                      itEnd = files.end();
-             it != itEnd; ++it) {
-            mStimuli.push_back(Stimulus(*it, dirLabelID));
-            mStimuliSets(Unpartitioned).push_back(mStimuli.size() - 1);
+    AerEvent event(readVersion(data));
+
+    if (!event.read(data).good())
+        throw std::runtime_error("Invalid AER file: " + fileName);
+
+    const Time_T timeStart = event.time;
+
+    data.seekg(-event.size(), std::ios::end);
+
+    if (!event.read(data).good())
+        throw std::runtime_error("Invalid AER file: " + fileName);
+
+    return std::make_pair(timeStart, event.time);
+}
+
+double N2D2::DVS_Database::readVersion(std::ifstream& data) const
+{
+    std::string line;
+    double version = 1.0; // Default version
+
+    while (data.peek() == '#' && getline(data, line)) {
+        if (line.compare(0, 9, "#!AER-DAT") == 0) {
+            std::stringstream versionStr(line.substr(9));
+            versionStr >> version;
         }
     }
 
-    if (depth != 0) {
-        // Recursively load stimuli contained in the subdirectories
-        std::sort(subDirs.begin(), subDirs.end());
-
-        for (std::vector<std::string>::const_iterator it = subDirs.begin(),
-                                                      itEnd = subDirs.end();
-             it != itEnd; ++it) {
-            if (labelDepth > 0)
-                loadDir(*it, depth - 1, labelName + "/" + Utils::baseName(*it),
-                    labelDepth - 1);
-            else
-                loadDir(*it, depth - 1, labelName, labelDepth);
-        }
-    }
-
-    std::cout << "Found " << mStimuli.size() << " stimuli" << std::endl;
+    return version;
 }
