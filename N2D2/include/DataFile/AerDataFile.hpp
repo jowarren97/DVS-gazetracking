@@ -18,31 +18,26 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "DataFile/WavDataFile.hpp"
+#ifndef N2D2_AERDATAFILE_H
+#define N2D2_AERDATAFILE_H
 
-N2D2::Registrar<N2D2::DataFile> N2D2::WavDataFile::mRegistrar(
-    {"wav"}, N2D2::WavDataFile::create);
+#include "DataFile/DataFile.hpp"
 
-cv::Mat N2D2::WavDataFile::read(const std::string& fileName)
-{
-    Sound snd;
-    snd.load(fileName);
+namespace N2D2 {
+class AerDataFile : public DataFile {
+public:
+    static std::shared_ptr<AerDataFile> create()
+    {
+        return std::make_shared<AerDataFile>();
+    }
 
-    if (snd.getNbChannels() > 1)
-        throw std::runtime_error(
-            "WavDataFile::read(): multiple channels WAV not supported: "
-            + fileName);
+    virtual cv::Mat read(const std::string& fileName);
+    virtual void write(const std::string& fileName, const cv::Mat& data);
+    virtual ~AerDataFile() {};
 
-    return cv::Mat(snd(0), true).t();
+private:
+    static Registrar<DataFile> mRegistrar;
+};
 }
 
-void N2D2::WavDataFile::write(const std::string& fileName, const cv::Mat& data)
-{
-    if (data.cols > 1)
-        throw std::runtime_error(
-            "WavDataFile::write(): multiple channels WAV not supported: "
-            + fileName);
-
-    Sound snd(Tensor<double>(data).data());
-    snd.save(fileName);
-}
+#endif // N2D2_AERDATAFILE_H

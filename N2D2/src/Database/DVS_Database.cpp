@@ -25,16 +25,19 @@
 #include "utils/Registrar.hpp"
 #include <bitset>
 
-N2D2::DVS_Database::DVS_Database(double validation, Time_T segmentSize, bool loadDataInMemory, AerFormat version)
+N2D2::DVS_Database::DVS_Database(double validation, Time_T segmentSize, bool loadDataInMemory, AerFormat DvsModel)
     : AER_Database(loadDataInMemory)
     , DIR_Database(loadDataInMemory)
     , Database(loadDataInMemory)
     , mValidation(validation)
     , mSegmentSize(segmentSize)
-    , mVersion(version)
+    , mSegmentStepSize(1000U) //UPDATE
+    , mAerFormat(DvsModel)
 {
     // ctor
     mValidExtensions.push_back("aedat");
+    std::cout << "FIRST ELEMENT OF VALID EXTENSIONS IS: " << mValidExtensions[0]
+              << std::endl;
 }
 
 /// This loads the database and partitions it into learning and testing samples
@@ -159,8 +162,10 @@ void N2D2::DVS_Database::loadDir(const std::string& dirPath,
             else {
                 // Exclude files with wrong extension
                 std::string fileExtension = Utils::fileExtension(fileName);
+                std::cout << "FILENAME IS: " << fileName
+                          << ", EXTENSION IS: " << fileExtension << std::endl;
                 std::transform(fileExtension.begin(), fileExtension.end(),
-                    fileExtension.begin(), ::tolower);
+                    fileExtension.begin(), ::tolower); //lowercase
 
                 if (mValidExtensions.empty()
                     || std::find(mValidExtensions.begin(),
@@ -185,8 +190,6 @@ void N2D2::DVS_Database::loadDir(const std::string& dirPath,
         if (!files.empty()) {
             // Load stimuli contained in this directory
             std::sort(files.begin(), files.end());
-
-            const int dirLabelID = (labelDepth >= 0) ? labelID(labelName) : -1;
 
             for (std::vector<std::string>::const_iterator it = files.begin(),
                                                           itEnd = files.end();
@@ -417,45 +420,44 @@ void N2D2::DVS_Database::segmentFile(const std::string&
     std::ifstream data(fileName.c_str(), std::fstream::binary);
     if (!data.good())
         throw std::runtime_error("Could not open AER file: " + fileName);
-    if (readVersion(data) != mVersion)
-        throw std::runtime_error(fileName + " is of inconsistent DVS format");
+	//MAYBE SOMETHING TO CHECK FILE IF DVS128 OR 240C
 
     std::pair<Time_T, Time_T> times = getTimes(fileName);
     Time_T startTime = times.first;
     Time_T endTime = times.second;
     unsigned int nbSegments = (endTime - mSegmentSize) % mSegmentStepSize;
 
-    AerEvent event(mVersion);
+    AerEvent event(readVersion(data));
     unsigned int nbEvents = 0;
     Time_T lastSegmentStart = startTime;
     unsigned int segmentCounter = 0;
     Time_T lastTime = startTime;
 
     while ((event.read(data).good()) && (segmentCounter < nbSegments)) {
-        // Tolerate a lag of 100ms because real AER retina captures are not
-        // always non-monotonic
-        if (event.time > startTime
-                + segmentCounter
-                    * mSegmentStepSize) { // add robustness to end of file;
-            // if event time is after segment start, assign new stimuli & record
-            // stream position (-1 event as just read one)
-            mStimuli.push_back(Stimulus(
-                fileName.c_str())); // change filename, maybe add _1, _2 etc.
-
-            StimulusID id = mStimuli.size() - 1;
-            mStimuliSets(Unpartitioned).push_back(id);
-            mStartPositions[id] = std::make_pair(
-                lastSegmentStart, (std::streamoff)data.tellg() - event.size());
-
-            ++segmentCounter;
-        }
-
         if (event.time + 100 * TimeMs >= lastTime) {
-            // Take the MAX because event.time can be non-monotonic because
-            // of AER lag or added jitter
-            lastTime = std::max(event.time, lastTime);
-            ++nbEvents;
-        }
+			// Tolerate a lag of 100ms because real AER retina captures are not
+			// always non-monotonic
+			if (event.time > startTime
+					+ segmentCounter
+						* mSegmentStepSize) { // add robustness to end of file;
+				// if event time is after segment start, assign new stimuli & record
+				// stream position (-1 event as just read one)
+				mStimuli.push_back(Stimulus(
+					fileName.c_str())); // change filename, maybe add _1, _2 etc.
+
+				StimulusID id = mStimuli.size() - 1;
+				mStimuliSets(Unpartitioned).push_back(id);
+				mStartPositions[id] = std::make_pair(
+					lastSegmentStart, (std::streamoff)data.tellg() - event.size());
+
+				++segmentCounter;
+			}
+
+			// Take the MAX because event.time can be non-monotonic because
+			// of AER lag or added jitter
+			lastTime = std::max(event.time, lastTime);
+			++nbEvents;
+		}
         else if (nbEvents > 0) {
             std::cout << "Current event time is " << event.time / TimeUs
                       << " us, last event time was " << lastTime / TimeUs

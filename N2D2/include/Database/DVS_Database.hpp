@@ -64,7 +64,7 @@ protected:
     double mValidation;
 	Time_T mSegmentSize;
     Time_T mSegmentStepSize;
-    AerFormat mVersion;
+    AerFormat mAerFormat;
     std::unordered_map<StimulusID, std::pair<Time_T, std::streampos>> mStartPositions; //contains stimulus ID and corresponding timestamp starm & stream position
 };
 }
