@@ -24,14 +24,18 @@
 #include "Database/DIR_Database.hpp"
 #include "utils/Registrar.hpp"
 #include <bitset>
+#include <stdlib.h>
 
-N2D2::DVS_Database::DVS_Database(double validation, Time_T segmentSize, bool loadDataInMemory, AerFormat DvsModel)
+N2D2::DVS_Database::DVS_Database(double validation,
+    Time_T segmentSize,
+    bool loadDataInMemory,
+    AerFormat DvsModel)
     : AER_Database(loadDataInMemory)
     , DIR_Database(loadDataInMemory)
     , Database(loadDataInMemory)
     , mValidation(validation)
-    , mSegmentSize(segmentSize)
-    , mSegmentStepSize(1000U) //UPDATE
+    , mSegmentSize(1 * TimeS) // UPDATE
+    , mSegmentStepSize(1 * TimeS) // UPDATE
     , mAerFormat(DvsModel)
 {
     // ctor
@@ -71,7 +75,7 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
             }
         }
     }
-    
+    
     // Assign loaded stimuli to learning and validation set
     partitionStimuli(1.0 - mValidation, mValidation, 0.0);
 
@@ -165,7 +169,7 @@ void N2D2::DVS_Database::loadDir(const std::string& dirPath,
                 std::cout << "FILENAME IS: " << fileName
                           << ", EXTENSION IS: " << fileExtension << std::endl;
                 std::transform(fileExtension.begin(), fileExtension.end(),
-                    fileExtension.begin(), ::tolower); //lowercase
+                    fileExtension.begin(), ::tolower); // lowercase
 
                 if (mValidExtensions.empty()
                     || std::find(mValidExtensions.begin(),
@@ -284,70 +288,65 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     Time_T stop,
     unsigned int repetitions,
     unsigned int partialStimulus)
-{ /*
+{
     std::string filename = mStimuli[mStimuliSets(set)[id]].name;
-    // std::cout << filename << std::endl;
+    std::cout << "READING FROM " << filename << std::endl;
+    std::cout << "STIMULUS ID: " << id << std::endl;
+
     std::ifstream data(filename, std::fstream::binary);
     if (!data.good())
         throw std::runtime_error("Could not open AER file: " + filename);
 
+    AerEvent event(readVersion(data));
+    std::vector<AerReadEvent> stimu;
+    unsigned int nbEvents = 0;
+    unsigned int xCoor = 0;
+    unsigned int yCoor = 0;
+    Time_T startTime, lastTime;
+
     if (mStartPositions.find(id)
         != mStartPositions.end()) //&& start == history[fileName].first)
-        // Start from last position
-        data.seekg(mStartPositions[id]
-                       .second); // find starting position to read file from
+    // Start from last position
+    {
+        data.seekg(mStartPositions[id].second);
+        startTime = mStartPositions[id].first;
+        std::cout << "Start Time: " << startTime << " us" << std::endl;
+        lastTime = startTime;
+    }
+    else
+        throw std::runtime_error("Cannot read stimuli.");
 
-    std::vector<AerReadEvent> stimu;
+    while (event.read(data).good()) {
+        // Tolerate a lag of 100ms because real AER retina captures are not
+        // always non-monotonic
+        if (event.time + 100 * TimeMs >= lastTime) {
+            if (event.time >= startTime + mSegmentSize) {
+                break;
+            }
+            // stimu.push_back(std::make_pair(event.time, event.addr));
+            if (!event.frame) {
+                stimu.push_back(
+                    AerReadEvent(xCoor, yCoor, event.channel, event.time));
+            }
 
-    std::ifstream data(filename,
-        std::ios::in | std::ios::binary
-            | std::ios::ate); // define input file stream
-
-    if (data.good()) { // checks no errors
-
-        std::streampos size;
-        char* memblock;
-        size = data.tellg(); // Get pointer to end of file
-        memblock = new char[size]; // Allocate memory for data
-        data.seekg(0, std::ios::beg); // Set pointer to beginning
-        data.read(memblock, size); // read data into memblock
-        data.close();
-
-        unsigned int nbEvents
-            = (unsigned int)((int)size / 5); // not sure why divide by 5?
-
-        for (unsigned int ev = 0; ev < nbEvents; ++ev) {
-
-            unsigned int offset = 5 * ev;
-
-            unsigned int xCoor
-                = (unsigned int)((unsigned char)memblock[offset]);
-            unsigned int yCoor
-                = (unsigned int)((unsigned char)memblock[offset + 1]);
-
-            // Use unsigned int because only 24 bit
-            unsigned int bitstring = ((unsigned char)memblock[offset + 2]);
-            bitstring = (bitstring << 8) | (unsigned char)memblock[offset + 3];
-            bitstring = (bitstring << 8) | (unsigned char)memblock[offset + 4];
-            bitstring = bitstring << 8;
-
-            // Bit 24 represents sign
-            unsigned int sign = static_cast<unsigned int>(bitstring >> 31);
-            // Bit 23-0 represent time
-            unsigned int time
-                = static_cast<unsigned int>((bitstring << 1) >> (32 - 23));
-
-            stimu.push_back(AerReadEvent(xCoor, yCoor, sign, time));
+            // Take the MAX because event.time can be non-monotonic because of
+            // AER lag or added jitter
+            lastTime = std::max(event.time, lastTime);
+            ++nbEvents;
+            std::cout << event.time << std::endl;
         }
-
-        delete[] memblock;
+        else if (nbEvents > 0) {
+            std::cout << "Current event time is " << event.time / TimeUs
+                      << " us, last event time was " << lastTime / TimeUs
+                      << " us" << std::endl;
+            throw std::runtime_error(
+                "Non-monotonic AER data in file: " + filename);
+        }
     }
-    else {
-        throw std::runtime_error("DVS_Database::loadAerStimulusData: "
-                                 "Could not open AER file: "
-            + filename);
-    }
 
+    // std::sort(stimu.begin(), stimu.end(),
+    //        Utils::PairFirstPred<Time_T, unsigned int>());
+    /*
     Time_T intervalSize = (stop - start) / repetitions;
     if ((stop - start) % repetitions != 0) {
         std::cout << "start: " << start << std::endl;
@@ -355,8 +354,8 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
         std::cout << "repetitions: " << repetitions << std::endl;
         throw std::runtime_error("DVS_Database::loadAerStimulusData: "
                                  " repetitions not multiple of stop-start");
-    }
-
+    }*/
+    /*
     unsigned int startCounter = 0;
     unsigned int stopCounter = 0;
     Time_T lastTime = stimu[stimu.size() - 1].time;
@@ -397,20 +396,22 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
         }
 
         stimu.erase(stimu.begin() + stopCounter, stimu.end());
-    }
-
-    double scalingFactor = ((double)intervalSize) / (lastTime - startTime);
-
-    for (unsigned int i = 0; i < repetitions; ++i) {
-        for (std::vector<AerReadEvent>::iterator it = stimu.begin();
-             it != stimu.end(); ++it) {
-            Time_T scaledTime = std::floor(
-                (((*it).time - startTime) * scalingFactor) + i * intervalSize);
-
-            aerData.push_back(
-                AerReadEvent((*it).x, (*it).y, (*it).channel, scaledTime));
-        }
     }*/
+
+    // double scalingFactor = ((double)intervalSize) / (lastTime - startTime);
+
+    //for (unsigned int i = 0; i < repetitions; ++i) {
+    for (std::vector<AerReadEvent>::iterator it = stimu.begin();
+            it != stimu.end(); ++it) {
+        // Time_T scaledTime = std::floor(
+        //     (((*it).time - startTime) * scalingFactor) + i *
+        //     intervalSize);
+
+        aerData.push_back(AerReadEvent(
+            (*it).x, (*it).y, (*it).channel, (*it).time - startTime));
+    }
+    //}
+    data.close();
 }
 
 void N2D2::DVS_Database::segmentFile(const std::string&
@@ -420,12 +421,19 @@ void N2D2::DVS_Database::segmentFile(const std::string&
     std::ifstream data(fileName.c_str(), std::fstream::binary);
     if (!data.good())
         throw std::runtime_error("Could not open AER file: " + fileName);
-	//MAYBE SOMETHING TO CHECK FILE IF DVS128 OR 240C
+    // MAYBE SOMETHING TO CHECK FILE IF DVS128 OR 240C
 
     std::pair<Time_T, Time_T> times = getTimes(fileName);
     Time_T startTime = times.first;
     Time_T endTime = times.second;
-    unsigned int nbSegments = (endTime - mSegmentSize) % mSegmentStepSize;
+    lldiv_t divRes
+        = lldiv((endTime - startTime - mSegmentSize), mSegmentStepSize);
+    unsigned int nbSegments = divRes.quot;
+
+    std::cout << "Start: " << startTime << "; End: " << endTime << std::endl;
+    std::cout << "SegmentStepSize: " << mSegmentStepSize << std::endl;
+    std::cout << "SegmentSize: " << mSegmentSize << std::endl;
+    std::cout << "Number of segments: " << nbSegments << std::endl;
 
     AerEvent event(readVersion(data));
     unsigned int nbEvents = 0;
@@ -434,30 +442,33 @@ void N2D2::DVS_Database::segmentFile(const std::string&
     Time_T lastTime = startTime;
 
     while ((event.read(data).good()) && (segmentCounter < nbSegments)) {
+        // std::cout << "...event read..." << std::endl;
         if (event.time + 100 * TimeMs >= lastTime) {
-			// Tolerate a lag of 100ms because real AER retina captures are not
-			// always non-monotonic
-			if (event.time > startTime
-					+ segmentCounter
-						* mSegmentStepSize) { // add robustness to end of file;
-				// if event time is after segment start, assign new stimuli & record
-				// stream position (-1 event as just read one)
-				mStimuli.push_back(Stimulus(
-					fileName.c_str())); // change filename, maybe add _1, _2 etc.
+            // Tolerate a lag of 100ms because real AER retina captures are not
+            // always non-monotonic
+            if (event.time > startTime
+                    + segmentCounter
+                        * mSegmentStepSize) { // add robustness to end of file;
+                // if event time is after segment start, assign new stimuli &
+                // record stream position (-1 event as just read one)
+                mStimuli.push_back(Stimulus(
+                    fileName
+                        .c_str())); // change filename, maybe add _1, _2 etc.
 
-				StimulusID id = mStimuli.size() - 1;
-				mStimuliSets(Unpartitioned).push_back(id);
-				mStartPositions[id] = std::make_pair(
-					lastSegmentStart, (std::streamoff)data.tellg() - event.size());
+                StimulusID id = mStimuli.size() - 1;
+                mStimuliSets(Unpartitioned).push_back(id);
+                mStartPositions[id] = std::make_pair(startTime + segmentCounter * mSegmentStepSize,
+                    (std::streamoff)data.tellg() - event.size());
+                std::cout << "STIM START TIME: " << startTime + segmentCounter * mSegmentStepSize
+                          << std::endl;
+                ++segmentCounter;
+            }
 
-				++segmentCounter;
-			}
-
-			// Take the MAX because event.time can be non-monotonic because
-			// of AER lag or added jitter
-			lastTime = std::max(event.time, lastTime);
-			++nbEvents;
-		}
+            // Take the MAX because event.time can be non-monotonic because
+            // of AER lag or added jitter
+            lastTime = std::max(event.time, lastTime);
+            ++nbEvents;
+        }
         else if (nbEvents > 0) {
             std::cout << "Current event time is " << event.time / TimeUs
                       << " us, last event time was " << lastTime / TimeUs
@@ -468,6 +479,7 @@ void N2D2::DVS_Database::segmentFile(const std::string&
     }
 
     std::cout << "Total number of events in file was " << nbEvents << std::endl;
+    data.close();
 }
 
 std::pair<N2D2::Time_T, N2D2::Time_T> N2D2::DVS_Database::getTimes(
@@ -490,6 +502,7 @@ std::pair<N2D2::Time_T, N2D2::Time_T> N2D2::DVS_Database::getTimes(
     if (!event.read(data).good())
         throw std::runtime_error("Invalid AER file: " + fileName);
 
+    data.close();
     return std::make_pair(timeStart, event.time);
 }
 

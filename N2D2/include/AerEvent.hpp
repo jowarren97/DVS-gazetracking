@@ -58,6 +58,7 @@ struct AerEvent {
     unsigned int map;
     unsigned int channel;
     unsigned int node;
+    bool frame;
 
 private:
     template <class T1, class T2>
@@ -101,6 +102,7 @@ template <class T1, class T2>
 typename std::enable_if<!std::is_unsigned<T2>::value, std::ifstream&>::type
 N2D2::AerEvent::read(std::ifstream& data)
 {
+    frame = false;
     T1 rawAddr;
     T2 rawTime;
 
@@ -119,7 +121,8 @@ N2D2::AerEvent::read(std::ifstream& data)
         // unsigned int mask = 0x0000FFFF;
         // unsigned result = addr & mask;
         if (((addr_temp & (1 << (31))) >> 31) == 1) {
-            std::cout << "frame event found" << std::endl;
+            //std::cout << "frame event found" << std::endl;
+            frame = true;
         }
 
         unsigned xaddr = (((1 << 10) - 1) & (addr_temp >> (12)));

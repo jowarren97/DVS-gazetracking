@@ -30,6 +30,7 @@ N2D2::AerEvent::AerEvent(double version)
     , mVersion(version)
     , mRawTimeNeg(false)
     , mRawTimeOffset(0)
+    , frame(false)
 {
     // ctor
 }
