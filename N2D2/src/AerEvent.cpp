@@ -35,6 +35,16 @@ N2D2::AerEvent::AerEvent(double version)
     // ctor
 }
 
+std::pair<unsigned int, unsigned int> N2D2::AerEvent::getCoor(AerFormat format)
+{
+    if (format == Dvs240c) {
+        //
+    }
+    else {
+		//
+	}
+}
+
 std::ifstream& N2D2::AerEvent::read(std::ifstream& data)
 {
     // DEBUG - working

@@ -75,7 +75,7 @@ void N2D2::DVS_Database::load(const std::string& dataPath,
             }
         }
     }
-    
+    
     // Assign loaded stimuli to learning and validation set
     partitionStimuli(1.0 - mValidation, mValidation, 0.0);
 
@@ -327,13 +327,15 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
             if (!event.frame) {
                 stimu.push_back(
                     AerReadEvent(xCoor, yCoor, event.channel, event.time));
+                std::cout << event.time << std::endl;
             }
+            //else
+            //    std::cout << "FRAME" << std::endl;
 
             // Take the MAX because event.time can be non-monotonic because of
             // AER lag or added jitter
             lastTime = std::max(event.time, lastTime);
             ++nbEvents;
-            std::cout << event.time << std::endl;
         }
         else if (nbEvents > 0) {
             std::cout << "Current event time is " << event.time / TimeUs
@@ -400,9 +402,9 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
 
     // double scalingFactor = ((double)intervalSize) / (lastTime - startTime);
 
-    //for (unsigned int i = 0; i < repetitions; ++i) {
+    // for (unsigned int i = 0; i < repetitions; ++i) {
     for (std::vector<AerReadEvent>::iterator it = stimu.begin();
-            it != stimu.end(); ++it) {
+         it != stimu.end(); ++it) {
         // Time_T scaledTime = std::floor(
         //     (((*it).time - startTime) * scalingFactor) + i *
         //     intervalSize);
@@ -457,9 +459,11 @@ void N2D2::DVS_Database::segmentFile(const std::string&
 
                 StimulusID id = mStimuli.size() - 1;
                 mStimuliSets(Unpartitioned).push_back(id);
-                mStartPositions[id] = std::make_pair(startTime + segmentCounter * mSegmentStepSize,
+                mStartPositions[id] = std::make_pair(
+                    startTime + segmentCounter * mSegmentStepSize,
                     (std::streamoff)data.tellg() - event.size());
-                std::cout << "STIM START TIME: " << startTime + segmentCounter * mSegmentStepSize
+                std::cout << "STIM START TIME: "
+                          << startTime + segmentCounter * mSegmentStepSize
                           << std::endl;
                 ++segmentCounter;
             }

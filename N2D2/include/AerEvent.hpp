@@ -46,6 +46,7 @@ struct AerEvent {
     AerEvent(double version = 3.0);
     std::ifstream& read(std::ifstream& data);
     std::ofstream& write(std::ofstream& data) const;
+    std::pair<unsigned int, unsigned int> getCoor(AerFormat format = Dvs240c);
     int size() const;
     void maps(AerFormat format = N2D2Env);
     void unmaps(AerFormat format = N2D2Env);
@@ -121,32 +122,37 @@ N2D2::AerEvent::read(std::ifstream& data)
         // unsigned int mask = 0x0000FFFF;
         // unsigned result = addr & mask;
         if (((addr_temp & (1 << (31))) >> 31) == 1) {
-            //std::cout << "frame event found" << std::endl;
+            // std::cout << "frame event found" << std::endl;
             frame = true;
         }
 
-        unsigned xaddr = (((1 << 10) - 1) & (addr_temp >> (12)));
-        unsigned yaddr = (((1 << 9) - 1) & (addr_temp >> (22)));
+        xaddr = (((1 << 10) - 1) & (addr_temp >> (12)));
+        yaddr = (((1 << 9) - 1) & (addr_temp >> (22)));
 
         // DEBUG - works
         // std::cout << std::bitset<32>(addr_temp) << std::endl;
         // std::cout << std::bitset<32>(xaddr) << std::endl;
         // std::cout << std::bitset<32>(yaddr) << std::endl;
+        // if (!frame) {
         // std::cout << "x address: " << xaddr << std::endl;
         // std::cout << "y address: " << yaddr << std::endl;
+        // std::getchar();
+        //}
 
         addr = xaddr + yaddr * 240;
         // std::cout << "Full Address: " << std::bitset<32>(addr_temp) <<
-        // std::endl; std::cout << "Parsed Address: " << std::bitset<32>(addr) <<
-        // std::endl;
+        // std::endl; std::cout << "Parsed Address: " <<
+        // std::bitset<32>(addr)
+        // << std::endl;
 
         channel = (addr_temp & (1 << 11)) >> 11;
-        // std::cout << "Channel: " << std::bitset<32>(channel) << std::endl;
+        // std::cout << "Channel: " << std::bitset<32>(channel) <<
+        // std::endl;
 
         addr = (addr << 1) + channel; // WORKING FOR AEDAT2.0
         // std::cout << "Address: " << addr << std::endl;
-        // std::cout << "New Address: " << std::bitset<32>(addr) << std::endl;
-        // std::getchar();
+        // std::cout << "New Address: " << std::bitset<32>(addr) <<
+        // std::endl; std::getchar();
     }
 
     else {
@@ -154,11 +160,11 @@ N2D2::AerEvent::read(std::ifstream& data)
     }
 
     // Check & correct for overflow
-    // (required for "Tmpdiff128-2007-02-28T15-08-15-0800-0 3 flies 2m 1f.dat"
-    // for example)
+    // (required for "Tmpdiff128-2007-02-28T15-08-15-0800-0 3 flies 2m
+    // 1f.dat" for example)
     if (rawTime < 0 && !mRawTimeNeg) {
-        // std::cout << "AER time overflow detected! (time is " << rawTime << "
-        // us, offset is "
+        // std::cout << "AER time overflow detected! (time is " << rawTime
+        // << " us, offset is "
         //          << mRawTimeOffset << " us)" << std::endl;
         mRawTimeOffset += (1ULL << 8 * sizeof(rawTime));
         mRawTimeNeg = true;
@@ -167,6 +173,9 @@ N2D2::AerEvent::read(std::ifstream& data)
         mRawTimeNeg = false;
 
     time = (mRawTimeOffset + rawTime) * TimeUs;
+
+    // if (!frame)
+    //    std::cout << "Time: " << time << std::endl;
 
     return data;
 }
