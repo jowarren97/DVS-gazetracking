@@ -289,6 +289,7 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     unsigned int repetitions,
     unsigned int partialStimulus)
 {
+    std::cout << "ENTERRED HERE..." << std::endl;
     std::string filename = mStimuli[mStimuliSets(set)[id]].name;
     std::cout << "READING FROM " << filename << std::endl;
     std::cout << "STIMULUS ID: " << id << std::endl;
@@ -302,7 +303,7 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     unsigned int nbEvents = 0;
     unsigned int xCoor = 0;
     unsigned int yCoor = 0;
-    Time_T startTime, lastTime;
+    Time_T startTime, lastTime, endTime;
 
     if (mStartPositions.find(id)
         != mStartPositions.end()) //&& start == history[fileName].first)
@@ -311,7 +312,8 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
         data.seekg(mStartPositions[id].second);
         startTime = mStartPositions[id].first;
         std::cout << "Start Time: " << startTime << " us" << std::endl;
-        lastTime = startTime;
+        endTime = startTime + mSegmentSize;
+		lastTime = startTime;
     }
     else
         throw std::runtime_error("Cannot read stimuli.");
@@ -326,8 +328,10 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
             // stimu.push_back(std::make_pair(event.time, event.addr));
             if (!event.frame) {
                 stimu.push_back(
-                    AerReadEvent(xCoor, yCoor, event.channel, event.time));
-                std::cout << event.time << std::endl;
+                    AerReadEvent(event.xaddr, event.yaddr, event.channel, event.time));
+                //std::cout << "x: " << event.xaddr << ", y: " << event.yaddr
+                //          << std::endl;
+                //std::cout << "Time: " << event.time << std::endl << std::endl;
             }
             //else
             //    std::cout << "FRAME" << std::endl;
@@ -345,11 +349,13 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
                 "Non-monotonic AER data in file: " + filename);
         }
     }
+    data.close();
 
     // std::sort(stimu.begin(), stimu.end(),
     //        Utils::PairFirstPred<Time_T, unsigned int>());
+    
+    Time_T intervalSize = stop - start;
     /*
-    Time_T intervalSize = (stop - start) / repetitions;
     if ((stop - start) % repetitions != 0) {
         std::cout << "start: " << start << std::endl;
         std::cout << "stop: " << stop << std::endl;
@@ -400,20 +406,21 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
         stimu.erase(stimu.begin() + stopCounter, stimu.end());
     }*/
 
-    // double scalingFactor = ((double)intervalSize) / (lastTime - startTime);
+    double scalingFactor = ((double)intervalSize) / (endTime - startTime);
 
-    // for (unsigned int i = 0; i < repetitions; ++i) {
-    for (std::vector<AerReadEvent>::iterator it = stimu.begin();
-         it != stimu.end(); ++it) {
-        // Time_T scaledTime = std::floor(
-        //     (((*it).time - startTime) * scalingFactor) + i *
-        //     intervalSize);
+	if (scalingFactor != 1.0)
+        std::cout << "Notice: scaling factor for loading of Aer Data was not 1."
+                  << std::endl;
 
-        aerData.push_back(AerReadEvent(
-            (*it).x, (*it).y, (*it).channel, (*it).time - startTime));
-    }
+    //for (unsigned int i = 0; i < repetitions; ++i) {
+	for (std::vector<AerReadEvent>::iterator it = stimu.begin();
+			it != stimu.end(); ++it) {
+		Time_T scaledTime = std::floor(((*it).time - startTime) * scalingFactor);
+
+		aerData.push_back(AerReadEvent(
+			(*it).x, (*it).y, (*it).channel, scaledTime));
+	}
     //}
-    data.close();
 }
 
 void N2D2::DVS_Database::segmentFile(const std::string&
