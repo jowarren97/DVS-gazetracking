@@ -46,7 +46,7 @@ struct AerEvent {
     AerEvent(double version = 3.0);
     std::ifstream& read(std::ifstream& data);
     std::ofstream& write(std::ofstream& data) const;
-    std::pair<unsigned int, unsigned int> getCoor(AerFormat format = Dvs240c);
+    //std::pair<unsigned int, unsigned int> getCoor(AerFormat format = Dvs240c);
     int size() const;
     void maps(AerFormat format = N2D2Env);
     void unmaps(AerFormat format = N2D2Env);
@@ -60,6 +60,8 @@ struct AerEvent {
     unsigned int channel;
     unsigned int node;
     bool frame;
+    unsigned int xaddr;
+    unsigned int yaddr;
 
 private:
     template <class T1, class T2>
