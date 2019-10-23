@@ -18,29 +18,30 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "Generator/DVS_DatabaseGenerator.hpp"
+#include "Generator/Pupil_DatabaseGenerator.hpp"
 
 N2D2::Registrar<N2D2::DatabaseGenerator>
-N2D2::DVS_DatabaseGenerator::mRegistrar(
-    "DVS_Database", N2D2::DVS_DatabaseGenerator::generate);
+N2D2::Pupil_DatabaseGenerator::mRegistrar(
+    "Pupil_Database", N2D2::Pupil_DatabaseGenerator::generate);
 
-std::shared_ptr<N2D2::DVS_Database>
-N2D2::DVS_DatabaseGenerator::generate(IniParser& iniConfig,
+std::shared_ptr<N2D2::Pupil_Database>
+N2D2::Pupil_DatabaseGenerator::generate(IniParser& iniConfig,
                                             const std::string& section)
 {
     if (!iniConfig.currentSection(section))
         throw std::runtime_error("Missing [" + section + "] section.");
 
     const double validation = iniConfig.getProperty<double>("Validation", 0.0);
-    const Time_T segmentSize = iniConfig.getProperty<Time_T>("SegmentSize", TimeS);
+    const Time_T segmentSize
+        = iniConfig.getProperty<Time_T>("SegmentSize", TimeS);
     const Time_T segmentStepSize
         = iniConfig.getProperty<Time_T>("SegmentStepSize", TimeS);
 
     const std::string dataPath = Utils::expandEnvVars(
-        iniConfig.getProperty<std::string>("DataPath", N2D2_DATA("dvs")));
+        iniConfig.getProperty<std::string>("DataPath", N2D2_DATA("Pupil")));
 
-    std::shared_ptr<DVS_Database> database = std::make_shared
-        <DVS_Database>(validation, segmentSize, segmentStepSize);
+    std::shared_ptr<Pupil_Database> database = std::make_shared
+        <Pupil_Database>(validation, segmentSize, segmentStepSize);
     database->setParameters(iniConfig.getSection(section, true));
     database->load(dataPath);
     return database;

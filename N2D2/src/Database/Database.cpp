@@ -39,6 +39,7 @@ N2D2::Database::Database(bool loadDataInMemory)
       mLoadDataInMemory(loadDataInMemory),
       mStimuliDepth(-1)
 {
+    std::cout << "Database Construcor" << std::endl;
     // ctor
 }
 

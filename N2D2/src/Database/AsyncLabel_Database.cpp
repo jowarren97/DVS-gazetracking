@@ -19,26 +19,15 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "Database/AER_Database.hpp"
+#include "DataFile/DataFile.hpp"
+#include "Database/AsyncLabel_Database.hpp"
+#include "utils/Registrar.hpp"
+#include <bitset>
+#include <stdlib.h>
 
-
-
-N2D2::AerReadEvent::AerReadEvent(unsigned int x_,
-                                 unsigned int y_,
-                                 unsigned int channel_,
-                                 Time_T time_)
-    : x(x_),
-    y(y_),
-    channel(channel_),
-    time(time_)
+N2D2::AsyncLabel_Database::AsyncLabel_Database(double validation, bool loadDataInMemory)
+    : AER_Database(loadDataInMemory), Database(loadDataInMemory)
 {
+    std::cout << "AsyncLabel Database Construcor" << std::endl;
     // ctor
 }
-
-N2D2::AER_Database::AER_Database(bool loadDataInMemory)
-    : Database(loadDataInMemory)
-{
-    std::cout << "AER Database Construcor" << std::endl;
-    // ctor
-}
-

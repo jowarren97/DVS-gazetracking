@@ -28,17 +28,20 @@
 
 N2D2::DVS_Database::DVS_Database(double validation,
     Time_T segmentSize,
+	Time_T segmentStepSize,
     bool loadDataInMemory,
     AerFormat DvsModel)
     : AER_Database(loadDataInMemory)
     , DIR_Database(loadDataInMemory)
     , Database(loadDataInMemory)
     , mValidation(validation)
-    , mSegmentSize(1 * TimeS) // UPDATE
-    , mSegmentStepSize(1 * TimeS) // UPDATE
+    , mSegmentSize(segmentSize) // UPDATE
+    , mSegmentStepSize(segmentStepSize) // UPDATE
     , mAerFormat(DvsModel)
 {
     // ctor
+    std::cout << "DVS Database Construcor" << std::endl;
+
     mValidExtensions.push_back("aedat");
     std::cout << "FIRST ELEMENT OF VALID EXTENSIONS IS: " << mValidExtensions[0]
               << std::endl;
@@ -289,6 +292,8 @@ void N2D2::DVS_Database::loadAerStimulusData(std::vector<AerReadEvent>& aerData,
     unsigned int repetitions,
     unsigned int partialStimulus)
 {
+    std::cout << "USING DVS::LOADAERSTIMULUSDATA" << std::endl;
+
     std::cout << "ENTERRED HERE..." << std::endl;
     std::string filename = mStimuli[mStimuliSets(set)[id]].name;
     std::cout << "READING FROM " << filename << std::endl;

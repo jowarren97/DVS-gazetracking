@@ -19,26 +19,14 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "Database/AER_Database.hpp"
+#include "Database/Pupil_Database.hpp"
+#include "utils/Registrar.hpp"
 
-
-
-N2D2::AerReadEvent::AerReadEvent(unsigned int x_,
-                                 unsigned int y_,
-                                 unsigned int channel_,
-                                 Time_T time_)
-    : x(x_),
-    y(y_),
-    channel(channel_),
-    time(time_)
+N2D2::Pupil_Database::Pupil_Database(double validation, Time_T segmentSize, Time_T segmentStepSize, bool loadDataInMemory)
+    : DVS_Database(validation, segmentSize, segmentStepSize, loadDataInMemory)
+    , AsyncLabel_Database(loadDataInMemory)
+    , Database(loadDataInMemory)
 {
     // ctor
+    std::cout << "Pupil Database Construcor" << std::endl;
 }
-
-N2D2::AER_Database::AER_Database(bool loadDataInMemory)
-    : Database(loadDataInMemory)
-{
-    std::cout << "AER Database Construcor" << std::endl;
-    // ctor
-}
-

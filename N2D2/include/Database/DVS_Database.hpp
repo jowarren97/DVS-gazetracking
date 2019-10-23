@@ -27,7 +27,7 @@
 #include "AerEvent.hpp"
 
 namespace N2D2 {
-class DVS_Database : public AER_Database, public DIR_Database {
+class DVS_Database : public virtual AER_Database, public virtual DIR_Database {
 public:
     enum AerFormat {
 		N2D2Env,
@@ -35,7 +35,7 @@ public:
         Dvs240c // EDITED BY ME
     };
 
-    DVS_Database(double validation = 0.0, Time_T segmentSize = 1000U, bool loadDataInMemory = true, AerFormat version = Dvs240c);
+    DVS_Database(double validation = 0.0, Time_T segmentSize = TimeS, Time_T segmentStepSize = TimeS, bool loadDataInMemory = true, AerFormat version = Dvs240c);
     virtual void load(const std::string& dataPath,
                       const std::string& labelPath = "",
                       bool /*extractROIs*/ = false);

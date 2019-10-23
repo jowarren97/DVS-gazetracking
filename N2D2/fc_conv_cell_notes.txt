@@ -1,0 +1,15 @@
+Function for getting output from cell (i.e. over time window)
+
+
+Monitor function for checking if output correct
+- need to check if any neurons active within time-window
+- find most active neuron
+- need to keep track of spike counts during window
+
+
+
+
+Target Process
+- Get TargetCell
+- Get label of Target (should be in database stimulus, use stim id to locate)
+- Do some comparison between target label and 'assigned' label of most active neuron

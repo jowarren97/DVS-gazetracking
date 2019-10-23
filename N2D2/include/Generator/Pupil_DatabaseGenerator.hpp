@@ -1,7 +1,6 @@
 /*
     (C) Copyright 2016 CEA LIST. All Rights Reserved.
-    Contributor(s): Johannes THIELE (johannes.thiele@cea.fr)
-                    Olivier BICHLER (olivier.bichler@cea.fr)
+    Contributor(s): Olivier BICHLER (olivier.bichler@cea.fr)
 
     This software is governed by the CeCILL-C license under French law and
     abiding by the rules of distribution of free software.  You can  use,
@@ -19,26 +18,22 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
-#include "Database/AER_Database.hpp"
+#ifndef N2D2_PUPIL_DATABASEGENERATOR_H
+#define N2D2_PUPIL_DATABASEGENERATOR_H
 
+#include "Database/Pupil_Database.hpp"
+#include "DatabaseGenerator.hpp"
+#include "N2D2.hpp"
 
+namespace N2D2 {
+class Pupil_DatabaseGenerator : public DatabaseGenerator {
+public:
+    static std::shared_ptr<Pupil_Database>
+    generate(IniParser& iniConfig, const std::string& section);
 
-N2D2::AerReadEvent::AerReadEvent(unsigned int x_,
-                                 unsigned int y_,
-                                 unsigned int channel_,
-                                 Time_T time_)
-    : x(x_),
-    y(y_),
-    channel(channel_),
-    time(time_)
-{
-    // ctor
+private:
+    static Registrar<DatabaseGenerator> mRegistrar;
+};
 }
 
-N2D2::AER_Database::AER_Database(bool loadDataInMemory)
-    : Database(loadDataInMemory)
-{
-    std::cout << "AER Database Construcor" << std::endl;
-    // ctor
-}
-
+#endif // N2D2_PUPIL_DATABASEGENERATOR_H

@@ -25,6 +25,7 @@
 N2D2::DIR_Database::DIR_Database(bool loadDataInMemory)
     : Database(loadDataInMemory)
 {
+    std::cout << "DIR Database Construcor" << std::endl;
     // ctor
 }
 
