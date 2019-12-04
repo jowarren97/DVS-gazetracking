@@ -35,12 +35,13 @@ N2D2::DVS_DatabaseGenerator::generate(IniParser& iniConfig,
     const Time_T segmentSize = iniConfig.getProperty<Time_T>("SegmentSize", TimeS);
     const Time_T segmentStepSize
         = iniConfig.getProperty<Time_T>("SegmentStepSize", TimeS);
+    const bool asyncLabels = iniConfig.getProperty<bool>("AsyncLabels", false);
 
     const std::string dataPath = Utils::expandEnvVars(
         iniConfig.getProperty<std::string>("DataPath", N2D2_DATA("dvs")));
 
     std::shared_ptr<DVS_Database> database = std::make_shared
-        <DVS_Database>(validation, segmentSize, segmentStepSize);
+        <DVS_Database>(validation, segmentSize, segmentStepSize, asyncLabels);
     database->setParameters(iniConfig.getSection(section, true));
     database->load(dataPath);
     return database;

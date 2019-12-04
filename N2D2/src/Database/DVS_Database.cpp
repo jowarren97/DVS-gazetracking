@@ -29,14 +29,15 @@
 N2D2::DVS_Database::DVS_Database(double validation,
     Time_T segmentSize,
 	Time_T segmentStepSize,
-    bool loadDataInMemory,
+	bool asyncLabels,
     AerFormat DvsModel)
-    : AER_Database(loadDataInMemory)
-    , DIR_Database(loadDataInMemory)
-    , Database(loadDataInMemory)
+    : AER_Database(true)
+    , DIR_Database(true)
+    , Database(true)
     , mValidation(validation)
     , mSegmentSize(segmentSize) // UPDATE
     , mSegmentStepSize(segmentStepSize) // UPDATE
+    , mAsyncLabels(asyncLabels)
     , mAerFormat(DvsModel)
 {
     // ctor
@@ -45,6 +46,9 @@ N2D2::DVS_Database::DVS_Database(double validation,
     mValidExtensions.push_back("aedat");
     std::cout << "FIRST ELEMENT OF VALID EXTENSIONS IS: " << mValidExtensions[0]
               << std::endl;
+    if (mAsyncLabels)
+        std::cout << "USING ASYNC LABELS MODE" << std::endl;
+        //mValidExtensions.push_back("txt");
 }
 
 /// This loads the database and partitions it into learning and testing samples
@@ -186,7 +190,7 @@ void N2D2::DVS_Database::loadDir(const std::string& dirPath,
                                   << Utils::cdef << std::endl;
                         continue;
                     }
-
+					
                     files.push_back(filePath);
                 }
             }

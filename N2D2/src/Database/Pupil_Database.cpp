@@ -22,11 +22,9 @@
 #include "Database/Pupil_Database.hpp"
 #include "utils/Registrar.hpp"
 
-N2D2::Pupil_Database::Pupil_Database(double validation, Time_T segmentSize, Time_T segmentStepSize, bool loadDataInMemory)
-    : DVS_Database(validation, segmentSize, segmentStepSize, loadDataInMemory)
-    , AsyncLabel_Database(loadDataInMemory)
-    , Database(loadDataInMemory)
+N2D2::Pupil_Database::Pupil_Database(double validation, Time_T segmentSize, Time_T segmentStepSize)
+    : DVS_Database(validation, segmentSize, segmentStepSize, true)
 {
     // ctor
-    std::cout << "Pupil Database Construcor" << std::endl;
+    std::cout << "Pupil Database Constructor" << std::endl;
 }

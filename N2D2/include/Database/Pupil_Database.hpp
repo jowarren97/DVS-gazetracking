@@ -22,14 +22,13 @@
 #ifndef N2D2_PUPIL_DATABASE_H
 #define N2D2_PUPIL_DATABASE_H
 
-#include "Database/AsyncLabel_Database.hpp"
 #include "Database/DVS_Database.hpp"
 #include "AerEvent.hpp"
 
 namespace N2D2 {
-class Pupil_Database : public DVS_Database, public AsyncLabel_Database {
+class Pupil_Database : public DVS_Database {
 public:
-    Pupil_Database(double validation = 0.0, Time_T segmentSize = TimeS, Time_T segmentStepSize = TimeS, bool loadDataInMemory = true);
+    Pupil_Database(double validation, Time_T segmentSize, Time_T segmentStepSize);
     virtual ~Pupil_Database() {};
 
 protected:

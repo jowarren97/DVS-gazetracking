@@ -35,7 +35,9 @@ public:
         Dvs240c // EDITED BY ME
     };
 
-    DVS_Database(double validation = 0.0, Time_T segmentSize = TimeS, Time_T segmentStepSize = TimeS, bool loadDataInMemory = true, AerFormat version = Dvs240c);
+    DVS_Database(double validation, Time_T segmentSize, 
+		Time_T segmentStepSize, 
+		bool asyncLabels, AerFormat version = Dvs240c);
     virtual void load(const std::string& dataPath,
                       const std::string& labelPath = "",
                       bool /*extractROIs*/ = false);
@@ -65,6 +67,7 @@ protected:
 	Time_T mSegmentSize;
     Time_T mSegmentStepSize;
     AerFormat mAerFormat;
+    bool mAsyncLabels;
     std::unordered_map<StimulusID, std::pair<Time_T, std::streampos>> mStartPositions; //contains stimulus ID and corresponding timestamp starm & stream position
 };
 }
